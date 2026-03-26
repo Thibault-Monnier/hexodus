@@ -4,14 +4,18 @@
 
 #include "Board.hpp"
 #include "Move.hpp"
+#include "engine/Engine.hpp"
 
-/// Represents the state of the game and handles the game logic.
+/// Represents the state of the game.
 class Game {
     Board board_;
+
+    Engine engine_;
+
     std::vector<Move> moveHistory_;
 
    public:
-    Game() {
+    Game() : engine_(board_) {
         board_.makeMove({.x = 0, .y = 0});  // Place the first piece at the center of the board.
     }
 
