@@ -1,15 +1,14 @@
 #pragma once
 
-#include <optional>
+#include <memory>
 #include <string>
-#include <vector>
 
 #include "Command.hpp"
 
 class CommandProcessor {
    public:
-    static Command waitForCommand();
+    static std::unique_ptr<Command> waitForCommand();
 
    private:
-    static std::optional<Command> processCommand(const std::string& command);
+    static std::unique_ptr<Command> processCommand(const std::string& command);
 };

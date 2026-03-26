@@ -4,6 +4,14 @@
 #include <iostream>
 #include <limits>
 
+bool Board::isOccupied(const int x, const int y) const {
+    const Coordinate coords{.x = x, .y = y};
+    const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
+
+    auto it = board_.find(chunkBase);
+    return it != board_.end() && it->second.get(coords) != TileKind::Empty;
+}
+
 void Board::set(const TileKind kind, const int x, const int y) {
     const Coordinate coords{.x = x, .y = y};
     const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);

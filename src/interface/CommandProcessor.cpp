@@ -4,18 +4,21 @@
 #include <sstream>
 #include <string>
 
-Command CommandProcessor::waitForCommand() {
-    std::string line;
-    while (true) {
-        std::getline(std::cin, line);
+#include "../core/Chunk.hpp"
 
-        if (const std::optional<Command> command = processCommand(line)) {
-            return command.value();
+std::unique_ptr<Command> CommandProcessor::waitForCommand() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (std::unique_ptr<Command> command = processCommand(line)) {
+            return command;
         }
     }
+
+    // EOF reached, return a quit command
+    return std::make_unique<Command>(Command::Kind::Quit);
 }
 
-std::optional<Command> CommandProcessor::processCommand(const std::string& command) {
+std::unique_ptr<Command> CommandProcessor::processCommand(const std::string& command) {
     std::istringstream iss(command);
     iss >> std::ws;  // Skip leading whitespace
 
@@ -24,19 +27,27 @@ std::optional<Command> CommandProcessor::processCommand(const std::string& comma
 
     if (commandKind.empty()) {
         // No command, ignore
-        return std::nullopt;
+        return nullptr;
     }
 
-    if (commandKind == "ping") {
-        return Command(Command::Kind::Ping);
+    if (commandKind == "print") {
+        return std::make_unique<Command>(Command::Kind::Print);
     }
-    if (commandKind == "test") {
-        return Command(Command::Kind::Test);
+
+    if (commandKind == "move") {
+        int x1, y1, x2, y2;
+        if (iss >> x1 >> y1 >> x2 >> y2) {
+            return std::make_unique<MoveCommand>(Coordinate(x1, y1), Coordinate(x2, y2));
+        }
+
+        std::cerr << "Invalid move command format is ignored: " << command << '\n';
+        return nullptr;
     }
+
     if (commandKind == "quit") {
-        return Command(Command::Kind::Quit);
+        return std::make_unique<Command>(Command::Kind::Quit);
     }
 
     std::cerr << "Unknown command is ignored: " << command << '\n';
-    return std::nullopt;
+    return nullptr;
 }
