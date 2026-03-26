@@ -1,14 +1,14 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.30)
 project(hexodus)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
-add_executable(hexodus src/main.cpp)
+file(GLOB SOURCES "src/*.cpp")
+add_executable(hexodus ${SOURCES})
 
 target_compile_options(hexodus PRIVATE -Wall -Wextra -stdlib=libc++)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_definitions(hexodus PRIVATE _LIBCPP_REMOVE_TRANSITIVE_INCLUDES)
     target_compile_options(hexodus PRIVATE -stdlib=libc++)
     target_link_options(hexodus PRIVATE -stdlib=libc++)
 endif ()
