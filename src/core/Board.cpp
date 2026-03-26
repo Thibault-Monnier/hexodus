@@ -4,7 +4,7 @@
 #include <iostream>
 #include <limits>
 
-bool Board::isOccupied(const int x, const int y) const {
+bool Board::isOccupied(const int16_t x, const int16_t y) const {
     const Coordinate coords{.x = x, .y = y};
     const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
 
@@ -12,7 +12,7 @@ bool Board::isOccupied(const int x, const int y) const {
     return it != board_.end() && it->second.get(coords) != TileKind::Empty;
 }
 
-void Board::set(const TileKind kind, const int x, const int y) {
+void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     const Coordinate coords{.x = x, .y = y};
     const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
 
@@ -30,13 +30,14 @@ void Board::print() const {
         return;
     }
 
-    int maxX = std::numeric_limits<int>::min(), maxY = maxX;
-    int minX = std::numeric_limits<int>::max(), minY = minX;
+    int16_t maxX = std::numeric_limits<int16_t>::min(), maxY = maxX;
+    int16_t minX = std::numeric_limits<int16_t>::max(), minY = minX;
 
     for (const auto& [chunkBase, chunk] : board_) {
-        for (int dy = 0; dy < static_cast<int>(Chunk::SIZE); ++dy) {
-            for (int dx = 0; dx < static_cast<int>(Chunk::SIZE); ++dx) {
-                const Coordinate global{.x = chunkBase.x + dx, .y = chunkBase.y + dy};
+        for (int16_t dy = 0; dy < static_cast<int16_t>(Chunk::SIZE); ++dy) {
+            for (int16_t dx = 0; dx < static_cast<int16_t>(Chunk::SIZE); ++dx) {
+                const Coordinate global{.x = static_cast<int16_t>(chunkBase.x + dx),
+                                        .y = static_cast<int16_t>(chunkBase.y + dy)};
                 if (chunk.get(global) != TileKind::Empty) {
                     maxX = std::max(maxX, global.x);
                     minX = std::min(minX, global.x);
@@ -47,9 +48,10 @@ void Board::print() const {
         }
     }
 
-    for (int y = maxY; y >= minY; --y) {
-        for (int i = 0; i < y - minY; ++i) std::cout << ' ';
-        for (int x = minX; x <= maxX; ++x) {
+    for (int16_t y = maxY; y >= minY; --y) {
+        for (int16_t i = 0; i < y - minY; ++i) std::cout << ' ';
+
+        for (int16_t x = minX; x <= maxX; ++x) {
             const Coordinate coords{.x = x, .y = y};
             const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
             auto it = board_.find(chunkBase);
