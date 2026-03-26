@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "Board.hpp"
-#include "Game.hpp"
+#include "core/Board.hpp"
+#include "interface/CommandProcessor.hpp"
 
 void dummyTest() {
     Board board;
@@ -21,9 +21,19 @@ void dummyTest() {
 }
 
 int main() {
-    dummyTest();
+    while (true) {
+        const Command command = CommandProcessor::waitForCommand();
 
-    const Game game;
-
-    return 0;
+        switch (command.getKind()) {
+            case Command::Kind::Ping:
+                std::cout << "Hi!\n";
+                break;
+            case Command::Kind::Test:
+                dummyTest();
+                break;
+            case Command::Kind::Quit:
+                std::cout << "Quitting...\n";
+                return 0;
+        }
+    }
 }
