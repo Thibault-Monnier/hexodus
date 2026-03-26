@@ -4,24 +4,32 @@
 #include <iostream>
 #include <limits>
 
+#include "Move.hpp"
+
 bool Board::isOccupied(const int16_t x, const int16_t y) const {
     const Coordinate coords{.x = x, .y = y};
     const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
 
-    auto it = board_.find(chunkBase);
+    const auto it = board_.find(chunkBase);
     return it != board_.end() && it->second.get(coords) != TileKind::Empty;
 }
 
-void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
-    const Coordinate coords{.x = x, .y = y};
-    const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
+void Board::makeMove(const Move move) {
+    const Coordinate coord1 = move.getCoord1(), coord2 = move.getCoord2();
 
-    auto it = board_.find(chunkBase);
-    if (it == board_.end()) {
-        it = board_.emplace(chunkBase, chunkBase).first;
-    }
+    const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
 
-    it->second.set(kind, coords);
+    if (!validateMove(move)) return;
+
+    set(tileKind, coord1.x, coord1.y);
+    set(tileKind, coord2.x, coord2.y);
+    whiteToMove_ = !whiteToMove_;
+}
+
+void Board::makeMove(const Coordinate coord1) {
+    const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
+    set(tileKind, coord1.x, coord1.y);
+    whiteToMove_ = !whiteToMove_;
 }
 
 void Board::print() const {
@@ -66,4 +74,32 @@ void Board::print() const {
         }
         std::cout << '\n';
     }
+}
+
+void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
+    const Coordinate coords{.x = x, .y = y};
+    const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
+
+    auto it = board_.find(chunkBase);
+    if (it == board_.end()) {
+        it = board_.emplace(chunkBase, chunkBase).first;
+    }
+
+    it->second.set(kind, coords);
+}
+
+bool Board::validateMove(const Move& move) const {
+    if (isOccupied(move.getCoord1().x, move.getCoord1().y)) {
+        std::cerr << "Invalid move: coordinate (" << move.getCoord1().x << ", "
+                  << move.getCoord1().y << ") is already occupied.\n";
+        return false;
+    }
+
+    if (isOccupied(move.getCoord2().x, move.getCoord2().y)) {
+        std::cerr << "Invalid move: coordinate (" << move.getCoord2().x << ", "
+                  << move.getCoord2().y << ") is already occupied.\n";
+        return false;
+    }
+
+    return true;
 }
