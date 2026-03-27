@@ -21,6 +21,20 @@ int main() {
                 game.makeMove(moveCommand.getCoord1(), moveCommand.getCoord2());
                 break;
             }
+            case Command::Kind::MoveRequest: {
+                const Move bestMove = game.playBestMove(2);
+                std::cout << "Best move: (" << bestMove.getCoord1().x << ", "
+                          << bestMove.getCoord1().y << ") and (" << bestMove.getCoord2().x << ", "
+                          << bestMove.getCoord2().y << ")\n";
+                break;
+            }
+            case Command::Kind::Analyse: {
+                const Move bestMove = game.findBestMove(2);
+                std::cout << "Best move: (" << bestMove.getCoord1().x << ", "
+                          << bestMove.getCoord1().y << ") and (" << bestMove.getCoord2().x << ", "
+                          << bestMove.getCoord2().y << ")\n";
+                break;
+            }
             case Command::Kind::Quit:
                 std::cout << "Quitting...\n";
                 return 0;

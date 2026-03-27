@@ -24,6 +24,7 @@ std::unique_ptr<Command> CommandProcessor::processCommand(const std::string& com
 
     std::string commandKind;
     iss >> commandKind >> std::ws;
+    std::ranges::transform(commandKind, commandKind.begin(), ::tolower);
 
     if (commandKind.empty()) {
         // No command, ignore
@@ -35,13 +36,21 @@ std::unique_ptr<Command> CommandProcessor::processCommand(const std::string& com
     }
 
     if (commandKind == "move") {
-        int x1, y1, x2, y2;
+        int16_t x1, y1, x2, y2;
         if (iss >> x1 >> y1 >> x2 >> y2) {
             return std::make_unique<MoveCommand>(Coordinate(x1, y1), Coordinate(x2, y2));
         }
 
         std::cerr << "Invalid move command format is ignored: " << command << '\n';
         return nullptr;
+    }
+
+    if (commandKind == "moverequest") {
+        return std::make_unique<Command>(Command::Kind::MoveRequest);
+    }
+
+    if (commandKind == "analyse") {
+        return std::make_unique<Command>(Command::Kind::Analyse);
     }
 
     if (commandKind == "quit") {

@@ -19,6 +19,14 @@ class Game {
         board_.makeMove({.x = 0, .y = 0});  // Place the first piece at the center of the board.
     }
 
+    Move findBestMove(const uint16_t depth) { return engine_.findBestMove(depth); }
+
+    Move playBestMove(const uint16_t depth) {
+        const Move bestMove = findBestMove(depth);
+        makeMove(bestMove.getCoord1(), bestMove.getCoord2());
+        return bestMove;
+    }
+
     void makeMove(const Coordinate coord1, const Coordinate coord2) {
         const Move move(coord1, coord2);
         board_.makeMove(move);
