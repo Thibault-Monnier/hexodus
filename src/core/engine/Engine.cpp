@@ -1,7 +1,7 @@
 #include "Engine.hpp"
 
-Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta) {
-    if (remainingDepth == 0) {
+Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Move* bestMoveOut) {
+    if (remainingDepth == 0 || board_.endOfGame() != EndOfGameType::None) {
         return evaluate();
     }
 
@@ -13,7 +13,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta) {
         white ? std::numeric_limits<Score>::min() : std::numeric_limits<Score>::max();
     for (const Move move : moves) {
         board_.makeMove(move);
-        const Score evaluation = minimax(remainingDepth - 1, alpha, beta);
+        const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
         board_.undoMove(move);
 
         if (white)
@@ -21,9 +21,9 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta) {
         else
             beta = std::min(beta, evaluation);
 
-        if (evaluation > bestEvaluation) {
+        if (white ? evaluation > bestEvaluation : evaluation < bestEvaluation) {
             bestEvaluation = evaluation;
-            bestLocalMove_ = move;
+            if (bestMoveOut) *bestMoveOut = move;
         }
 
         if (beta <= alpha) break;
@@ -39,8 +39,8 @@ Score Engine::evaluate() const {
 
         assert(endOfGame == EndOfGameType::Win);
         // If it's the end of the game, the previous player is the winner
-        return (board_.isWhiteToMove()) ? std::numeric_limits<Score>::min()
-                                        : std::numeric_limits<Score>::max();
+        return (board_.isWhiteToMove()) ? std::numeric_limits<Score>::min() + 1
+                                        : std::numeric_limits<Score>::max() - 1;
     }
 
     // TODO: Improve this using the alignments_ vector.

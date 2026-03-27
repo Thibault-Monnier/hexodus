@@ -18,9 +18,8 @@ bool Board::isOccupied(const int16_t x, const int16_t y) const {
 }
 
 EndOfGameType Board::endOfGame() const {
-    for (const auto [startCoord, endCoord] : alignments_) {
-        const uint16_t length =
-            std::max(std::abs(endCoord.x - startCoord.x), std::abs(endCoord.y - startCoord.y)) + 1;
+    for (const auto [start, end] : alignments_ | std::views::keys) {
+        const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
         if (length >= GameRuleConstants::WINNING_ALIGNMENT_LENGTH) return EndOfGameType::Win;
     }
 
@@ -50,6 +49,12 @@ void Board::undoMove(const Move move) {
     set(TileKind::Empty, coord1.x, coord1.y);
     set(TileKind::Empty, coord2.x, coord2.y);
     whiteToMove_ = !whiteToMove_;
+
+    // Undo alignments
+    std::erase_if(alignments_, [&move](const auto& alignment) {
+        const Coordinate addedCoord = alignment.second;
+        return addedCoord == move.getCoord1() || addedCoord == move.getCoord2();
+    });
 }
 
 std::vector<Move> Board::possibleMoves() const {
@@ -61,8 +66,8 @@ std::vector<Move> Board::possibleMoves() const {
         for (int i = 0; i < S * S; ++i) {
             if (tiles[i] != TileKind::Empty) continue;
 
-            emptyTiles.push_back({static_cast<int16_t>(chunkBase.x + i / S),
-                                  static_cast<int16_t>(chunkBase.y + i % S)});
+            emptyTiles.push_back({.x = static_cast<int16_t>(chunkBase.x + i / S),
+                                  .y = static_cast<int16_t>(chunkBase.y + i % S)});
         }
     }
 
@@ -169,7 +174,7 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
         // Add alignment if length >= 2
         const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
         if (length >= 2) {
-            alignments_.emplace_back(start, end);
+            alignments_.emplace_back(std::pair{start, end}, coords);
         }
     }
 }

@@ -14,9 +14,10 @@ class Board {
     std::unordered_map<Coordinate, Chunk> board_;
 
     /// Stores the start and end coordinates of every line of 2 or more consecutive aligned
-    /// pieces of the same color. Used to efficiently check for end-of-game conditions and for
-    /// position evaluation in the engine.
-    std::vector<std::pair<Coordinate, Coordinate>> alignments_;
+    /// pieces of the same color, along with the coordinate of the piece that added the alignment.
+    /// Used to efficiently check for end-of-game conditions and for position evaluation in the
+    /// engine.
+    std::vector<std::pair<std::pair<Coordinate, Coordinate>, Coordinate>> alignments_;
 
    public:
     [[nodiscard]] bool isOccupied(int16_t x, int16_t y) const;

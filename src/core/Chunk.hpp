@@ -22,7 +22,7 @@ enum class TileKind : uint8_t { Empty, Black, White };
 
 class Chunk {
    public:
-    static constexpr size_t SIZE = 16;
+    static constexpr size_t SIZE = 7;
 
    private:
     const Coordinate baseCoords_;

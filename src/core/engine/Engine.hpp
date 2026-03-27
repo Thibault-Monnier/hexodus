@@ -18,19 +18,19 @@ class Engine {
 
     const std::unordered_map<Coordinate, TTEntry> transpositionTable_;
 
-    Move bestLocalMove_{};
-
    public:
     explicit Engine(Board& board) : board_(board) {}
 
     /// Uses a minimax search algorithm to determine the best move for the current player.
     Move findBestMove(const uint16_t depth) {
-        minimax(depth, std::numeric_limits<Score>::min(), std::numeric_limits<Score>::max());
-        return bestLocalMove_;
+        Move bestMove;
+        minimax(depth, std::numeric_limits<Score>::min(), std::numeric_limits<Score>::max(),
+                &bestMove);
+        return bestMove;
     }
 
    private:
-    Score minimax(uint16_t remainingDepth, Score alpha, Score beta);
+    Score minimax(uint16_t remainingDepth, Score alpha, Score beta, Move* bestMoveOut);
 
     /// Evaluates the current board state and returns an evaluation score. Positive scores indicate
     /// an advantage for the current player, while negative scores indicate a disadvantage.
