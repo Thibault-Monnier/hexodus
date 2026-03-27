@@ -76,7 +76,7 @@ class Chunk {
                 .y = static_cast<int16_t>(global.y - baseCoords_.y)};
     }
 
-    static void validateCoords(const int16_t x, const int16_t y) {
+    static void validateCoords([[maybe_unused]] const int16_t x, [[maybe_unused]] const int16_t y) {
         assert(static_cast<size_t>(x) < SIZE && static_cast<size_t>(y) < SIZE);
     }
 };
