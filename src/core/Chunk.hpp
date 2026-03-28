@@ -8,7 +8,18 @@
 struct Coordinate {
     int16_t x, y;
 
+    Coordinate() = default;
+    constexpr Coordinate(const int16_t x, const int16_t y) : x(x), y(y) {}
+
     bool operator==(const Coordinate&) const = default;
+
+    Coordinate operator+(const Coordinate& other) const {
+        return {static_cast<int16_t>(x + other.x), static_cast<int16_t>(y + other.y)};
+    }
+
+    Coordinate operator-(const Coordinate& other) const {
+        return {static_cast<int16_t>(x - other.x), static_cast<int16_t>(y - other.y)};
+    }
 };
 
 template <>
@@ -40,8 +51,8 @@ class Chunk {
                 return static_cast<int16_t>((a - b + 1) / b);
         };
         constexpr int16_t S = SIZE;
-        return {.x = static_cast<int16_t>(floorDiv(coords.x, S) * S),
-                .y = static_cast<int16_t>(floorDiv(coords.y, S) * S)};
+        return {static_cast<int16_t>(floorDiv(coords.x, S) * S),
+                static_cast<int16_t>(floorDiv(coords.y, S) * S)};
     }
 
     [[nodiscard]] std::span<const TileKind, SIZE * SIZE> getFlat() const {
@@ -66,14 +77,14 @@ class Chunk {
 
     [[nodiscard]] Coordinate getGlobal(const int16_t x, const int16_t y) const {
         validateCoords(x, y);
-        return Coordinate{.x = static_cast<int16_t>(baseCoords_.x + x),
-                          .y = static_cast<int16_t>(baseCoords_.y + y)};
+        return Coordinate{static_cast<int16_t>(baseCoords_.x + x),
+                          static_cast<int16_t>(baseCoords_.y + y)};
     }
 
    private:
     [[nodiscard]] Coordinate getRel(const Coordinate global) const {
-        return {.x = static_cast<int16_t>(global.x - baseCoords_.x),
-                .y = static_cast<int16_t>(global.y - baseCoords_.y)};
+        return {static_cast<int16_t>(global.x - baseCoords_.x),
+                static_cast<int16_t>(global.y - baseCoords_.y)};
     }
 
     static void validateCoords([[maybe_unused]] const int16_t x, [[maybe_unused]] const int16_t y) {

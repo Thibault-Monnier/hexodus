@@ -8,7 +8,8 @@
 
 enum class EndOfGameType : uint8_t { None, Win, Draw };
 
-/// Represents the state of a board, and handles move validation and generation.
+/// Represents the state of a board, handles move validation and generation. Keeps track of various
+/// things to allow for efficient use in the engine.
 class Board {
     bool whiteToMove_ = true;
     std::unordered_map<Coordinate, Chunk> board_;
@@ -19,7 +20,12 @@ class Board {
     /// engine.
     std::vector<std::pair<std::pair<Coordinate, Coordinate>, Coordinate>> alignments_;
 
+    /// Stores the history of moves made, used for undoing moves and possible moves generation.
+    std::vector<Move> moveHistory_;
+
    public:
+    int counter = 0;
+
     [[nodiscard]] bool isOccupied(int16_t x, int16_t y) const;
     [[nodiscard]] bool isWhiteToMove() const { return whiteToMove_; }
 
@@ -31,8 +37,8 @@ class Board {
     /// Single piece move for the first move of the game.
     void makeMove(Coordinate coord1);
 
-    /// Reverts the board state to before the move was made.
-    void undoMove(Move move);
+    /// Reverts the board state to before the last move was made.
+    void undoMove();
 
     /// Returns a list of all valid moves for the current player.
     [[nodiscard]] std::vector<Move> possibleMoves() const;
@@ -43,6 +49,25 @@ class Board {
    private:
     void set(TileKind kind, int16_t x, int16_t y);
 
+    Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy, TileKind kind);
+
     /// Checks if the move is valid. If not, prints an error message.
     [[nodiscard]] bool validateMove(const Move& move) const;
+
+    [[nodiscard]] Move lastMove() const {
+        assert(!moveHistory_.empty());
+        return moveHistory_.back();
+    }
+
+    [[nodiscard]] Move beforeLastMove() const {
+        assert(moveHistory_.size() >= 2);
+        return moveHistory_[moveHistory_.size() - 2];
+    }
+
+    /// Returns the last move made and removes if from the move history.
+    [[nodiscard]] Move popLastMove() {
+        const Move move = lastMove();
+        moveHistory_.pop_back();
+        return move;
+    }
 };

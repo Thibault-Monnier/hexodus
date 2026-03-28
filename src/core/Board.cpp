@@ -4,13 +4,14 @@
 #include <iostream>
 #include <limits>
 #include <ranges>
+#include <unordered_set>
 #include <utility>
 
 #include "GameRuleConstants.hpp"
 #include "Move.hpp"
 
 bool Board::isOccupied(const int16_t x, const int16_t y) const {
-    const Coordinate coords{.x = x, .y = y};
+    const Coordinate coords{x, y};
     const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
 
     const auto it = board_.find(chunkBase);
@@ -27,7 +28,7 @@ EndOfGameType Board::endOfGame() const {
 }
 
 void Board::makeMove(const Move move) {
-    const Coordinate coord1 = move.getCoord1(), coord2 = move.getCoord2();
+    const Coordinate coord1 = move.coord1, coord2 = move.coord2;
 
     const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
 
@@ -36,48 +37,66 @@ void Board::makeMove(const Move move) {
     set(tileKind, coord1.x, coord1.y);
     set(tileKind, coord2.x, coord2.y);
     whiteToMove_ = !whiteToMove_;
+    moveHistory_.push_back(move);
 }
 
 void Board::makeMove(const Coordinate coord1) {
     const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
     set(tileKind, coord1.x, coord1.y);
     whiteToMove_ = !whiteToMove_;
+    moveHistory_.push_back(Move(coord1, coord1));
 }
 
-void Board::undoMove(const Move move) {
-    const Coordinate coord1 = move.getCoord1(), coord2 = move.getCoord2();
+void Board::undoMove() {
+    if (moveHistory_.size() < 2) {
+        std::cerr << "No moves to undo.\n";
+        return;
+    }
+
+    counter++;
+
+    const Move move = popLastMove();
+
+    // Undo pieces
+    const Coordinate coord1 = move.coord1, coord2 = move.coord2;
     set(TileKind::Empty, coord1.x, coord1.y);
     set(TileKind::Empty, coord2.x, coord2.y);
-    whiteToMove_ = !whiteToMove_;
 
     // Undo alignments
-    std::erase_if(alignments_, [&move](const auto& alignment) {
+    std::erase_if(alignments_, [move](const auto& alignment) {
         const Coordinate addedCoord = alignment.second;
-        return addedCoord == move.getCoord1() || addedCoord == move.getCoord2();
+        return addedCoord == move.coord1 || addedCoord == move.coord2;
     });
+
+    whiteToMove_ = !whiteToMove_;
 }
 
 std::vector<Move> Board::possibleMoves() const {
-    constexpr int16_t S = Chunk::SIZE;
+    // Half the offsets, for the rest just take the opposite of these
+    // Radius of 2 to avoid too many possible moves -> combinatorial explosion
+    constexpr std::array<Coordinate, 9> OFFSETS = {
+        Coordinate{1, 0}, {0, 1}, {-1, 1}, {2, 0}, {1, 1}, {0, 2}, {-1, 2}, {-2, 2}, {-2, 1}};
 
-    std::vector<Coordinate> emptyTiles;
-    for (const auto& [chunkBase, chunk] : board_) {
-        auto tiles = chunk.getFlat();
-        for (int i = 0; i < S * S; ++i) {
-            if (tiles[i] != TileKind::Empty) continue;
+    const auto [coord1, coord2] = lastMove();
+    const auto [coord3, coord4] = moveHistory_.size() >= 2 ? beforeLastMove() : lastMove();
 
-            emptyTiles.push_back({.x = static_cast<int16_t>(chunkBase.x + i / S),
-                                  .y = static_cast<int16_t>(chunkBase.y + i % S)});
+    std::unordered_set<Coordinate> tiles;
+    // Push each offset around the 4 coords
+    for (const Coordinate base : {coord1, coord2, coord3, coord4}) {
+        for (const Coordinate offset : OFFSETS) {
+            const Coordinate coord = base + offset;
+            const Coordinate coordOther = base - offset;
+            if (!isOccupied(coord.x, coord.y)) tiles.insert(coord);
+            if (!isOccupied(coordOther.x, coordOther.y)) tiles.insert(coordOther);
         }
     }
 
     std::vector<Move> moves;
-    moves.reserve(board_.size() * Chunk::SIZE * Chunk::SIZE * Chunk::SIZE * Chunk::SIZE);
-
-    for (const Coordinate emptyTile1 : emptyTiles) {
-        for (const Coordinate emptyTile2 : emptyTiles) {
-            if (emptyTile1 == emptyTile2) continue;
-            moves.emplace_back(emptyTile1, emptyTile2);
+    moves.reserve(tiles.size() * (tiles.size() - 1));
+    for (const Coordinate tile1 : tiles) {
+        for (const Coordinate tile2 : tiles) {
+            if (tile1 == tile2) continue;
+            moves.emplace_back(tile1, tile2);
         }
     }
 
@@ -111,7 +130,7 @@ void Board::print() const {
         for (int16_t i = 0; i < y - minY; ++i) std::cout << ' ';
 
         for (int16_t x = minX; x <= maxX; ++x) {
-            const Coordinate coords{.x = x, .y = y};
+            const Coordinate coords{x, y};
             const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
             auto it = board_.find(chunkBase);
             const TileKind kind = (it == board_.end()) ? TileKind::Empty : it->second.get(coords);
@@ -128,7 +147,7 @@ void Board::print() const {
 }
 
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
-    const Coordinate coords{.x = x, .y = y};
+    const Coordinate coords{x, y};
     const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
 
     auto it = board_.find(chunkBase);
@@ -145,31 +164,8 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     constexpr std::array<std::pair<int16_t, int16_t>, 3> DIRECTIONS = {{{1, 0}, {0, 1}, {-1, 1}}};
 
     for (const auto& [dx, dy] : DIRECTIONS) {
-        Coordinate start = coords;
-        Coordinate end = coords;
-
-        // Check in both directions until a different tile kind is found
-        for (int16_t i = 1; std::cmp_less_equal(i, GameRuleConstants::WINNING_ALIGNMENT_LENGTH);
-             ++i) {
-            // TODO: If we later auto generate new chunks when there's a tile near the edge, we
-            //  might not need to check for out of bounds here.
-            {
-                const Coordinate check{.x = static_cast<int16_t>(coords.x - i * dx),
-                                       .y = static_cast<int16_t>(coords.y - i * dy)};
-                const Coordinate checkChunkBase = Chunk::chunkBaseCoords(check);
-                const auto checkIt = board_.find(checkChunkBase);
-                if (checkIt == board_.end() || checkIt->second.get(check) != kind) break;
-                start = check;
-            }
-            {
-                const Coordinate check{.x = static_cast<int16_t>(coords.x + i * dx),
-                                       .y = static_cast<int16_t>(coords.y + i * dy)};
-                const Coordinate checkChunkBase = Chunk::chunkBaseCoords(check);
-                const auto checkIt = board_.find(checkChunkBase);
-                if (checkIt == board_.end() || checkIt->second.get(check) != kind) break;
-                end = check;
-            }
-        }
+        const Coordinate start = findAlignmentEnd(coords, dx, dy, kind);
+        const Coordinate end = findAlignmentEnd(coords, -dx, -dy, kind);
 
         // Add alignment if length >= 2
         const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
@@ -179,16 +175,33 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     }
 }
 
+Coordinate Board::findAlignmentEnd(const Coordinate origin, const int16_t dx, const int16_t dy,
+                                   const TileKind kind) {
+    Coordinate last = origin;
+    for (int16_t i = 1; std::cmp_less_equal(i, GameRuleConstants::WINNING_ALIGNMENT_LENGTH); ++i) {
+        // TODO: If we later auto generate new chunks when there's a tile near the edge, we
+        //  might not need to check for out of bounds here.
+        const Coordinate check{static_cast<int16_t>(origin.x + i * dx),
+                               static_cast<int16_t>(origin.y + i * dy)};
+        const Coordinate checkChunkBase = Chunk::chunkBaseCoords(check);
+        const auto checkIt = board_.find(checkChunkBase);
+        if (checkIt == board_.end() || checkIt->second.get(check) != kind) break;
+        last = check;
+    }
+
+    return last;
+}
+
 bool Board::validateMove(const Move& move) const {
-    if (isOccupied(move.getCoord1().x, move.getCoord1().y)) {
-        std::cerr << "Invalid move: coordinate (" << move.getCoord1().x << ", "
-                  << move.getCoord1().y << ") is already occupied.\n";
+    if (isOccupied(move.coord1.x, move.coord1.y)) {
+        std::cerr << "Invalid move: coordinate (" << move.coord1.x << ", " << move.coord1.y
+                  << ") is already occupied.\n";
         return false;
     }
 
-    if (isOccupied(move.getCoord2().x, move.getCoord2().y)) {
-        std::cerr << "Invalid move: coordinate (" << move.getCoord2().x << ", "
-                  << move.getCoord2().y << ") is already occupied.\n";
+    if (isOccupied(move.coord2.x, move.coord2.y)) {
+        std::cerr << "Invalid move: coordinate (" << move.coord2.x << ", " << move.coord2.y
+                  << ") is already occupied.\n";
         return false;
     }
 

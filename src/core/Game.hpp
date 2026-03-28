@@ -23,7 +23,7 @@ class Game {
 
     Move playBestMove(const uint16_t depth) {
         const Move bestMove = findBestMove(depth);
-        makeMove(bestMove.getCoord1(), bestMove.getCoord2());
+        makeMove(bestMove.coord1, bestMove.coord2);
         return bestMove;
     }
 
