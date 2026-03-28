@@ -4,7 +4,7 @@
 
 class Command {
    public:
-    enum class Kind : uint8_t { Print, Move, MoveRequest, Analyse, Quit };
+    enum class Kind : uint8_t { Print, Move, MoveRequest, Analyse, Undo, Reset, Quit };
 
    private:
     Kind kind_;

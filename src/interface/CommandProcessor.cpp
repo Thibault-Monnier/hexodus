@@ -48,11 +48,15 @@ std::unique_ptr<Command> CommandProcessor::processCommand(const std::string& com
     if (commandKind == "moverequest") {
         return std::make_unique<Command>(Command::Kind::MoveRequest);
     }
-
     if (commandKind == "analyse") {
         return std::make_unique<Command>(Command::Kind::Analyse);
     }
-
+    if (commandKind == "undo") {
+        return std::make_unique<Command>(Command::Kind::Undo);
+    }
+    if (commandKind == "reset") {
+        return std::make_unique<Command>(Command::Kind::Reset);
+    }
     if (commandKind == "quit") {
         return std::make_unique<Command>(Command::Kind::Quit);
     }

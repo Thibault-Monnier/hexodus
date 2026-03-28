@@ -16,10 +16,15 @@ class Engine {
     Board& board_;
     std::vector<Move> moveHistory_;
 
-    const std::unordered_map<Coordinate, TTEntry> transpositionTable_;
+    std::unordered_map<Coordinate, TTEntry> transpositionTable_;
 
    public:
     explicit Engine(Board& board) : board_(board) {}
+
+    void reset() {
+        moveHistory_.clear();
+        transpositionTable_.clear();
+    }
 
     /// Uses a minimax search algorithm to determine the best move for the current player.
     Move findBestMove(const uint16_t depth) {

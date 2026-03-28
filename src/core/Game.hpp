@@ -12,12 +12,8 @@ class Game {
 
     Engine engine_;
 
-    std::vector<Move> moveHistory_;
-
    public:
-    Game() : engine_(board_) {
-        board_.makeMove({.x = 0, .y = 0});  // Place the first piece at the center of the board.
-    }
+    Game() : engine_(board_) { reset(); }
 
     Move findBestMove(const uint16_t depth) { return engine_.findBestMove(depth); }
 
@@ -30,7 +26,14 @@ class Game {
     void makeMove(const Coordinate coord1, const Coordinate coord2) {
         const Move move(coord1, coord2);
         board_.makeMove(move);
-        moveHistory_.push_back(move);
+    }
+
+    void undoMove() { board_.undoMove(); }
+
+    void reset() {
+        board_ = Board();
+        board_.makeMove({0, 0});
+        engine_.reset();
     }
 
     [[nodiscard]] const Board& getBoard() const { return board_; }
