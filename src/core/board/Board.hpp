@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ranges>
 #include <unordered_map>
 #include <vector>
 
@@ -50,6 +51,13 @@ class Board {
     /// Prints a representation of the board to the console.
     void print() const;
 
+    /// Returns a flattened view of all the tiles on the board
+    [[nodiscard]] auto getTiles() const {
+        return board_ | std::views::values |
+               std::views::transform([](const Chunk& chunk) { return chunk.getFlat(); }) |
+               std::views::join;
+    }
+
    private:
     void set(TileKind kind, int16_t x, int16_t y);
 
@@ -73,5 +81,16 @@ class Board {
         const Move move = lastMove();
         moveHistory_.pop_back();
         return move;
+    }
+};
+
+template <>
+struct std::hash<Board> {
+    size_t operator()(const Board& board) const noexcept {
+        size_t v = 0;
+        for (auto tile : board.getTiles()) {
+            v ^= std::hash<int>{}(static_cast<int>(tile)) + 0x9e3779b9 + (v << 6) + (v >> 2);
+        }
+        return v;
     }
 };

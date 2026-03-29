@@ -25,6 +25,7 @@ int main() {
                 const Move bestMove = game.playBestMove(3);
                 std::cout << "Best move: (" << bestMove.coord1.x << ", " << bestMove.coord1.y
                           << ") and (" << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
+                std::cout << "Moves undone: " << game.getBoard().counter << "\n";
                 break;
             }
             case Command::Kind::Analyse: {

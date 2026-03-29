@@ -27,7 +27,7 @@ class Chunk {
         return std::span<const TileKind, SIZE * SIZE>(&tiles_[0][0], SIZE * SIZE);
     }
 
-    [[nodiscard]] TileKind get(const Coordinate globalCoord) const;
+    [[nodiscard]] TileKind get(Coordinate globalCoord) const;
 
     [[nodiscard]] bool isEmpty(const Coordinate globalCoord) const {
         return get(globalCoord) == TileKind::Empty;
