@@ -22,7 +22,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     // it when using transposition table since TT can't fire on the root node (it is reset between
     // calls to findBestMove). This is fragile but works :-).
 
-    const auto it = transpositionTable_.find(std::hash<Board>{}(board_));
+    const auto it = transpositionTable_.find(board_.hash());
     if (it != transpositionTable_.end() && it->second.remainingDepth >= remainingDepth) {
         counter_++;
         const Score evaluation = it->second.score;
@@ -64,7 +64,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     const TTFlag flag = (bestEvaluation <= originalAlpha)  ? TTFlag::UpperBound
                         : (bestEvaluation >= originalBeta) ? TTFlag::LowerBound
                                                            : TTFlag::Exact;
-    transpositionTable_[std::hash<Board>{}(board_)] =
+    transpositionTable_[board_.hash()] =
         TTEntry{.remainingDepth = remainingDepth, .score = bestEvaluation, .flag = flag};
 
     return bestEvaluation;

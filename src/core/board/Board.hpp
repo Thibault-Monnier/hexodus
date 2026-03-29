@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <ranges>
 #include <unordered_map>
 #include <vector>
@@ -24,15 +25,16 @@ class Board {
     /// Stores the history of moves made, used for undoing moves and possible moves generation.
     std::vector<Move> moveHistory_;
 
-    /// Stores a hash of the current board state, used for the transposition table in the engine.
-    /// Updated after every move.
-    std::string hash_;
+    /// Stores a Zobrist hash of the current board state, used for the transposition table in the
+    /// engine. Updated incrementally after every move.
+    uint64_t zobristHash_ = 0;
 
    public:
     int counter = 0;
 
     [[nodiscard]] bool isOccupied(int16_t x, int16_t y) const;
     [[nodiscard]] bool isWhiteToMove() const { return whiteToMove_; }
+    [[nodiscard]] uint64_t hash() const { return zobristHash_; }
 
     [[nodiscard]] EndOfGameType endOfGame() const;
 
@@ -82,15 +84,8 @@ class Board {
         moveHistory_.pop_back();
         return move;
     }
-};
 
-template <>
-struct std::hash<Board> {
-    size_t operator()(const Board& board) const noexcept {
-        size_t v = 0;
-        for (auto tile : board.getTiles()) {
-            v ^= std::hash<int>{}(static_cast<int>(tile)) + 0x9e3779b9 + (v << 6) + (v >> 2);
-        }
-        return v;
-    }
+    /// Updates the Zobrist hash by XORing the hash value for the given tile. This can be used
+    /// either after doing or undoing a move.
+    void updateHash(int16_t x, int16_t y, TileKind kind);
 };

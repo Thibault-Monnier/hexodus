@@ -36,6 +36,10 @@ void Board::makeMove(const Move move) {
 
     set(tileKind, coord1.x, coord1.y);
     set(tileKind, coord2.x, coord2.y);
+
+    updateHash(coord1.x, coord1.y, tileKind);
+    updateHash(coord2.x, coord2.y, tileKind);
+
     whiteToMove_ = !whiteToMove_;
     moveHistory_.push_back(move);
 }
@@ -43,6 +47,9 @@ void Board::makeMove(const Move move) {
 void Board::makeMove(const Coordinate coord1) {
     const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
     set(tileKind, coord1.x, coord1.y);
+
+    updateHash(coord1.x, coord1.y, tileKind);
+
     whiteToMove_ = !whiteToMove_;
     moveHistory_.push_back(Move(coord1, coord1));
 }
@@ -61,6 +68,11 @@ void Board::undoMove() {
     const Coordinate coord1 = move.coord1, coord2 = move.coord2;
     set(TileKind::Empty, coord1.x, coord1.y);
     set(TileKind::Empty, coord2.x, coord2.y);
+
+    // Undo hash
+    const TileKind tileKind = whiteToMove_ ? TileKind::Black : TileKind::White;
+    updateHash(coord1.x, coord1.y, tileKind);
+    updateHash(coord2.x, coord2.y, tileKind);
 
     // Undo alignments
     std::erase_if(alignments_, [move](const auto& alignment) {
@@ -206,4 +218,17 @@ bool Board::validateMove(const Move& move) const {
     }
 
     return true;
+}
+
+void Board::updateHash(const int16_t x, const int16_t y, TileKind kind) {
+    uint64_t seed = static_cast<uint64_t>(static_cast<uint16_t>(x)) |
+                    static_cast<uint64_t>(static_cast<uint16_t>(y)) << 16 |
+                    static_cast<uint64_t>(static_cast<uint16_t>(kind)) << 32;
+    seed ^= seed >> 33;
+    seed *= 0xff51afd7ed558ccdULL;
+    seed ^= seed >> 33;
+    seed *= 0xc4ceb9fe1a85ec53ULL;
+    seed ^= seed >> 33;
+
+    zobristHash_ ^= seed;
 }
