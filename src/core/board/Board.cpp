@@ -92,7 +92,7 @@ std::vector<Move> Board::possibleMoves() const {
     const auto [coord1, coord2] = lastMove();
     const auto [coord3, coord4] = moveHistory_.size() >= 2 ? beforeLastMove() : lastMove();
 
-    std::unordered_set<Coordinate> tiles;
+    ankerl::unordered_dense::set<Coordinate> tiles;
     // Push each offset around the 4 coords
     for (const Coordinate base : {coord1, coord2, coord3, coord4}) {
         for (const Coordinate offset : OFFSETS) {

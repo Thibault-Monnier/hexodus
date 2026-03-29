@@ -41,3 +41,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(hexodus PRIVATE -stdlib=libc++)
     target_link_options(hexodus PRIVATE -stdlib=libc++)
 endif ()
+
+
+# --------- Libraries Setup ---------
+
+include(FetchContent)
+
+FetchContent_Declare(
+        unordered_dense
+        GIT_REPOSITORY https://github.com/martinus/unordered_dense.git
+        GIT_TAG v4.8.1
+        GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(unordered_dense)
+
+target_link_libraries(hexodus PRIVATE unordered_dense)

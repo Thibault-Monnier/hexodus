@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cstddef>
-#include <ranges>
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
+
 #include <vector>
 
 #include "Chunk.hpp"
@@ -14,7 +13,7 @@ enum class EndOfGameType : uint8_t { None, Win, Draw };
 /// things to allow for efficient use in the engine.
 class Board {
     bool whiteToMove_ = true;
-    std::unordered_map<Coordinate, Chunk> board_;
+    ankerl::unordered_dense::map<Coordinate, Chunk> board_;
 
     /// Stores the start and end coordinates of every line of 2 or more consecutive aligned
     /// pieces of the same color, along with the coordinate of the piece that added the alignment.
@@ -52,13 +51,6 @@ class Board {
 
     /// Prints a representation of the board to the console.
     void print() const;
-
-    /// Returns a flattened view of all the tiles on the board
-    [[nodiscard]] auto getTiles() const {
-        return board_ | std::views::values |
-               std::views::transform([](const Chunk& chunk) { return chunk.getFlat(); }) |
-               std::views::join;
-    }
 
    private:
     void set(TileKind kind, int16_t x, int16_t y);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <unordered_map>
 #include <vector>
 
 #include "core/board/Board.hpp"
@@ -22,7 +21,7 @@ class Engine {
 
     int counter_ = 0;
 
-    std::unordered_map<size_t, TTEntry> transpositionTable_;
+    ankerl::unordered_dense::map<size_t, TTEntry> transpositionTable_;
 
    public:
     explicit Engine(Board& board) : board_(board) {}
