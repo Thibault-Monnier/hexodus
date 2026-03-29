@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "Board.hpp"
-#include "Move.hpp"
+#include "board/Board.hpp"
+#include "board/Move.hpp"
 #include "engine/Engine.hpp"
 
 /// Represents the state of the game.

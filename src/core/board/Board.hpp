@@ -23,6 +23,10 @@ class Board {
     /// Stores the history of moves made, used for undoing moves and possible moves generation.
     std::vector<Move> moveHistory_;
 
+    /// Stores a hash of the current board state, used for the transposition table in the engine.
+    /// Updated after every move.
+    std::string hash_;
+
    public:
     int counter = 0;
 

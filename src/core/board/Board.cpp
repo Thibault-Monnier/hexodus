@@ -7,8 +7,8 @@
 #include <unordered_set>
 #include <utility>
 
-#include "GameRuleConstants.hpp"
 #include "Move.hpp"
+#include "core/GameRuleConstants.hpp"
 
 bool Board::isOccupied(const int16_t x, const int16_t y) const {
     const Coordinate coords{x, y};

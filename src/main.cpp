@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "core/Board.hpp"
 #include "core/Game.hpp"
+#include "core/board/Board.hpp"
 #include "interface/CommandProcessor.hpp"
 
 int main() {

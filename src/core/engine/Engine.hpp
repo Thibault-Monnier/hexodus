@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "core/Board.hpp"
+#include "core/board/Board.hpp"
 
 using Score = int16_t;
 
@@ -16,7 +16,7 @@ class Engine {
     Board& board_;
     std::vector<Move> moveHistory_;
 
-    std::unordered_map<Coordinate, TTEntry> transpositionTable_;
+    std::unordered_map<std::string, TTEntry> transpositionTable_;
 
    public:
     explicit Engine(Board& board) : board_(board) {}
