@@ -23,6 +23,8 @@ class Engine {
 
     ankerl::unordered_dense::map<size_t, TTEntry> transpositionTable_;
 
+    static constexpr Score WIN_SCORE = 10'000;
+
    public:
     explicit Engine(Board& board) : board_(board) {}
 

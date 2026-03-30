@@ -77,8 +77,7 @@ Score Engine::evaluate() const {
 
         assert(endOfGame == EndOfGameType::Win);
         // If it's the end of the game, the previous player is the winner
-        return (board_.isWhiteToMove()) ? std::numeric_limits<Score>::min() + 1
-                                        : std::numeric_limits<Score>::max() - 1;
+        return (board_.isWhiteToMove()) ? -WIN_SCORE : WIN_SCORE;
     }
 
     // TODO: Improve this using the alignments_ vector.

@@ -10,7 +10,7 @@
 #include "core/GameRuleConstants.hpp"
 
 bool Board::isOccupied(const int16_t x, const int16_t y) const {
-    return board_[x][y] != TileKind::Empty;
+    return get(x, y) != TileKind::Empty;
 }
 
 EndOfGameType Board::endOfGame() const {
@@ -119,8 +119,8 @@ void Board::print() const {
     int16_t maxX = std::numeric_limits<int16_t>::min(), maxY = maxX;
     int16_t minX = std::numeric_limits<int16_t>::max(), minY = minX;
 
-    for (int16_t x = 0; x < static_cast<int16_t>(SIZE); ++x) {
-        for (int16_t y = 0; y < static_cast<int16_t>(SIZE); ++y) {
+    for (int16_t x = -SIZE / 2; x < SIZE / 2; ++x) {
+        for (int16_t y = -SIZE / 2; y < SIZE / 2; ++y) {
             if (!isOccupied(x, y)) continue;
 
             maxX = std::max(maxX, x);
@@ -134,7 +134,7 @@ void Board::print() const {
         for (int16_t i = 0; i < y - minY; ++i) std::cout << "  ";
 
         for (int16_t x = minX; x <= maxX; ++x) {
-            const TileKind kind = board_[x][y];
+            const TileKind kind = get(x, y);
             char c = '.';
             if (kind == TileKind::White)
                 c = 'X';
@@ -149,7 +149,7 @@ void Board::print() const {
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     const Coordinate coords{x, y};
 
-    board_[coords.x][coords.y] = kind;
+    board_[coords.x + SIZE / 2][coords.y + SIZE / 2] = kind;
 
     if (kind == TileKind::Empty) return;
 
@@ -175,7 +175,7 @@ Coordinate Board::findAlignmentEnd(const Coordinate origin, const int16_t dx, co
     for (int16_t i = 1; std::cmp_less_equal(i, GameRuleConstants::WINNING_ALIGNMENT_LENGTH); ++i) {
         const Coordinate check{static_cast<int16_t>(origin.x + i * dx),
                                static_cast<int16_t>(origin.y + i * dy)};
-        if (board_[check.x][check.y] != kind) break;
+        if (get(check.x, check.y) != kind) break;
         last = check;
     }
 
@@ -183,6 +183,12 @@ Coordinate Board::findAlignmentEnd(const Coordinate origin, const int16_t dx, co
 }
 
 bool Board::validateMove(const Move& move) const {
+    if (!isInBounds(move.coord1.x, move.coord1.y)) {
+        std::cerr << "Invalid move: coordinate (" << move.coord1.x << ", " << move.coord1.y
+                  << ") is out of bounds.\n";
+        return false;
+    }
+
     if (isOccupied(move.coord1.x, move.coord1.y)) {
         std::cerr << "Invalid move: coordinate (" << move.coord1.x << ", " << move.coord1.y
                   << ") is already occupied.\n";

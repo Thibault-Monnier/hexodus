@@ -16,7 +16,7 @@ enum class EndOfGameType : uint8_t { None, Win, Draw };
 /// things to allow for efficient use in the engine.
 class Board {
    public:
-    static constexpr size_t SIZE = 128;
+    static constexpr int16_t SIZE = 128;
 
    private:
     bool whiteToMove_ = true;
@@ -61,6 +61,10 @@ class Board {
     void print() const;
 
    private:
+    [[nodiscard]] TileKind get(const int16_t x, const int16_t y) const {
+        assert(isInBounds(x, y));
+        return board_[x + SIZE / 2][y + SIZE / 2];
+    }
     void set(TileKind kind, int16_t x, int16_t y);
 
     [[nodiscard]] Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy,
@@ -68,6 +72,10 @@ class Board {
 
     /// Checks if the move is valid. If not, prints an error message.
     [[nodiscard]] bool validateMove(const Move& move) const;
+
+    [[nodiscard]] static bool isInBounds(const int16_t x, const int16_t y) {
+        return x >= -SIZE / 2 && x < SIZE / 2 && y >= -SIZE / 2 && y < SIZE / 2;
+    }
 
     [[nodiscard]] Move lastMove() const {
         assert(!moveHistory_.empty());
