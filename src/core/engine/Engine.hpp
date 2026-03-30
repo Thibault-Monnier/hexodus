@@ -10,6 +10,7 @@ using Score = int16_t;
 enum class TTFlag : uint8_t { Exact, LowerBound, UpperBound };
 
 struct TTEntry {
+    Move bestMove;
     uint16_t remainingDepth;
     Score score;
     TTFlag flag;

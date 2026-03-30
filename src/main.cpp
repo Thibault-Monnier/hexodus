@@ -22,14 +22,14 @@ int main() {
                 break;
             }
             case Command::Kind::MoveRequest: {
-                const Move bestMove = game.playBestMove(3);
+                const Move bestMove = game.playBestMove(4);
                 std::cout << "Best move: (" << bestMove.coord1.x << ", " << bestMove.coord1.y
                           << ") and (" << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
                 std::cout << "Moves undone: " << game.getBoard().counter << "\n";
                 break;
             }
             case Command::Kind::Analyse: {
-                const Move bestMove = game.findBestMove(3);
+                const Move bestMove = game.findBestMove(4);
                 std::cout << "Best move: (" << bestMove.coord1.x << ", " << bestMove.coord1.y
                           << ") and (" << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
                 std::cout << "Moves undone: " << game.getBoard().counter << "\n";
