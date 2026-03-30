@@ -56,17 +56,14 @@ void Board::undoMove() {
     updateHash(coord2.x, coord2.y, tileKind);
 
     // Undo alignments
-    for (auto it = alignments_.begin(); it != alignments_.end();) {
-        const Coordinate addedCoord = it->second;
-        if (addedCoord == move.coord1 || addedCoord == move.coord2) {
-            const auto& [start, end] = it->first;
-            const uint16_t length =
-                std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
-            alignmentCount_[length]--;
-            it = alignments_.erase(it);
-        } else {
-            ++it;
-        }
+    while (!alignments_.empty() &&
+           (alignments_.back().second == move.coord1 || alignments_.back().second == move.coord2)) {
+        const auto& [startEnd, _] = alignments_.back();
+        const uint16_t length = std::max(std::abs(startEnd.first.x - startEnd.second.x),
+                                         std::abs(startEnd.first.y - startEnd.second.y)) +
+                                1;
+        alignmentCount_[length]--;
+        alignments_.pop_back();
     }
 
     whiteToMove_ = !whiteToMove_;

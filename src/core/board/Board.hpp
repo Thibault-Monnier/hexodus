@@ -8,6 +8,7 @@
 #include "Coordinate.hpp"
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
+#include "support/SizedArray.hpp"
 
 enum class TileKind : uint8_t { Empty, Black, White };
 
@@ -28,7 +29,7 @@ class Board {
     /// pieces of the same color, along with the coordinate of the piece that added the alignment.
     /// Used to efficiently check for end-of-game conditions and for position evaluation in the
     /// engine.
-    std::vector<std::pair<std::pair<Coordinate, Coordinate>, Coordinate>> alignments_;
+    SizedArray<std::pair<std::pair<Coordinate, Coordinate>, Coordinate>, SIZE * SIZE> alignments_;
 
     /// Stores the number of alignments of each length for both players
     std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCount_ = {};
