@@ -16,14 +16,16 @@ struct TTEntry {
 };
 
 class Engine {
+    static constexpr Score WIN_SCORE = 10'000;
+
     Board& board_;
     std::vector<Move> moveHistory_;
 
-    int counter_ = 0;
-
     ankerl::unordered_dense::map<size_t, TTEntry> transpositionTable_;
 
-    static constexpr Score WIN_SCORE = 10'000;
+    uint16_t initialDepth_ = 0;
+
+    int counter_ = 0;
 
    public:
     explicit Engine(Board& board) : board_(board) {}
@@ -41,5 +43,5 @@ class Engine {
 
     /// Evaluates the current board state and returns an evaluation score. Positive scores indicate
     /// an advantage for the current player, while negative scores indicate a disadvantage.
-    [[nodiscard]] Score evaluate() const;
+    [[nodiscard]] Score evaluate(uint16_t remainingDepth) const;
 };

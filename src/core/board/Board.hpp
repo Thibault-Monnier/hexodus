@@ -42,6 +42,7 @@ class Board {
     [[nodiscard]] bool isOccupied(int16_t x, int16_t y) const;
     [[nodiscard]] bool isWhiteToMove() const { return whiteToMove_; }
     [[nodiscard]] uint64_t hash() const { return zobristHash_; }
+    [[nodiscard]] const auto& alignments() const { return alignments_; }
 
     [[nodiscard]] EndOfGameType endOfGame() const;
 
@@ -60,11 +61,12 @@ class Board {
     /// Prints a representation of the board to the console.
     void print() const;
 
-   private:
     [[nodiscard]] TileKind get(const int16_t x, const int16_t y) const {
         assert(isInBounds(x, y));
         return board_[x + SIZE / 2][y + SIZE / 2];
     }
+
+   private:
     void set(TileKind kind, int16_t x, int16_t y);
 
     [[nodiscard]] Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy,

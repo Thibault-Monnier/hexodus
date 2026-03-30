@@ -1,5 +1,7 @@
 #include "Engine.hpp"
 
+#include <ranges>
+
 Move Engine::findBestMove(const uint16_t depth) {
     // The transposition table is useless between calls: the number of pieces on the board is
     // strictly increasing, so if the board has advanced, all stored boards while have lower
@@ -7,15 +9,26 @@ Move Engine::findBestMove(const uint16_t depth) {
     counter_ = 0;
     transpositionTable_.clear();
 
+    initialDepth_ = depth;
+
+    const auto time = std::chrono::high_resolution_clock::now();
+
     Move bestMove;
-    minimax(depth, std::numeric_limits<Score>::min(), std::numeric_limits<Score>::max(), &bestMove);
+    const Score eval = minimax(depth, std::numeric_limits<Score>::min(),
+                               std::numeric_limits<Score>::max(), &bestMove);
+
+    const auto endTime = std::chrono::high_resolution_clock::now();
+    const auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - time).count();
+    std::cout << "Evaluation: " << eval << "\n";
     std::cout << "Used transposition table " << counter_ << " times.\n";
+    std::cout << "Time taken: " << duration << " ms\n";
     return bestMove;
 }
 
 Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Move* bestMoveOut) {
     if (remainingDepth == 0 || board_.endOfGame() != EndOfGameType::None) {
-        return evaluate();
+        return evaluate(remainingDepth);
     }
 
     // NOTE: bestMoveOut is only used for the root node, so we don't have to worry about populating
@@ -70,16 +83,32 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     return bestEvaluation;
 }
 
-Score Engine::evaluate() const {
+Score Engine::evaluate(const uint16_t remainingDepth) const {
+    const uint16_t depth = initialDepth_ - remainingDepth;
+
     const EndOfGameType endOfGame = board_.endOfGame();
     if (endOfGame != EndOfGameType::None) [[unlikely]] {
         if (endOfGame == EndOfGameType::Draw) return 0;
 
         assert(endOfGame == EndOfGameType::Win);
         // If it's the end of the game, the previous player is the winner
-        return (board_.isWhiteToMove()) ? -WIN_SCORE : WIN_SCORE;
+        const Score abs = static_cast<Score>(WIN_SCORE - depth);
+        return board_.isWhiteToMove() ? -abs : abs;
     }
 
-    // TODO: Improve this using the alignments_ vector.
-    return 0;
+    const auto& alignments = board_.alignments();
+
+    Score whiteScore = 0, blackScore = 0;
+    for (const auto& startEnd : alignments | std::views::keys) {
+        const auto& [start, end] = startEnd;
+        const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
+        const TileKind kind = board_.get(start.x, start.y);
+        const Score value = static_cast<Score>(length * length);
+        if (kind == TileKind::White)
+            whiteScore += value;
+        else
+            blackScore += value;
+    }
+
+    return static_cast<Score>(whiteScore - blackScore);
 }
