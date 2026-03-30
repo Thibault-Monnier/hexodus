@@ -71,24 +71,19 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
         white ? std::numeric_limits<Score>::min() : std::numeric_limits<Score>::max();
     Move bestMoveInThisNode;
 
-    const std::vector<Move> moves = board_.possibleMoves();
+    std::vector<Move> moves = board_.possibleMoves();
     possibleMovesCounter_++;
     generatedMovesCounter_ += moves.size();
 
-    std::vector<std::pair<int, Move>> scoredMoves;
-    scoredMoves.reserve(moves.size());
-
-    for (const Move& move : moves) {
-        int moveScore = 0;
-        if (hasTtMove && move == ttMove) moveScore = 1000000;
-        scoredMoves.emplace_back(moveScore, move);
+    for (size_t i = 0; i < moves.size(); ++i) {
+        if (hasTtMove && moves[i] == ttMove) {
+            std::swap(moves[0], moves[i]);
+            break;
+        }
     }
 
-    // Sort moves descending by score
-    std::ranges::sort(scoredMoves, [](const auto& a, const auto& b) { return a.first > b.first; });
-
     // Iterate over the sorted moves
-    for (const auto& move : scoredMoves | std::views::values) {
+    for (const auto& move : moves) {
         board_.makeMove(move);
         const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
         board_.undoMove();
