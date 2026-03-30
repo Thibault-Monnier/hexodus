@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 
-#include "core/board/Chunk.hpp"
+#include "core/board/Coordinate.hpp"
 
 std::unique_ptr<Command> CommandProcessor::waitForCommand() {
     std::string line;

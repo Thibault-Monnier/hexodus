@@ -2,18 +2,26 @@
 
 #include <ankerl/unordered_dense.h>
 
+#include <cassert>
 #include <vector>
 
-#include "Chunk.hpp"
+#include "Coordinate.hpp"
 #include "Move.hpp"
+
+enum class TileKind : uint8_t { Empty, Black, White };
 
 enum class EndOfGameType : uint8_t { None, Win, Draw };
 
 /// Represents the state of a board, handles move validation and generation. Keeps track of various
 /// things to allow for efficient use in the engine.
 class Board {
+   public:
+    static constexpr size_t SIZE = 128;
+
+   private:
     bool whiteToMove_ = true;
-    ankerl::unordered_dense::map<Coordinate, Chunk> board_;
+
+    std::array<std::array<TileKind, SIZE>, SIZE> board_ = {};
 
     /// Stores the start and end coordinates of every line of 2 or more consecutive aligned
     /// pieces of the same color, along with the coordinate of the piece that added the alignment.
@@ -55,7 +63,8 @@ class Board {
    private:
     void set(TileKind kind, int16_t x, int16_t y);
 
-    Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy, TileKind kind);
+    [[nodiscard]] Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy,
+                                              TileKind kind) const;
 
     /// Checks if the move is valid. If not, prints an error message.
     [[nodiscard]] bool validateMove(const Move& move) const;

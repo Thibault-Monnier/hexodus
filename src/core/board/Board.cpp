@@ -4,18 +4,13 @@
 #include <iostream>
 #include <limits>
 #include <ranges>
-#include <unordered_set>
 #include <utility>
 
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
 
 bool Board::isOccupied(const int16_t x, const int16_t y) const {
-    const Coordinate coords{x, y};
-    const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
-
-    const auto it = board_.find(chunkBase);
-    return it != board_.end() && it->second.get(coords) != TileKind::Empty;
+    return board_[x][y] != TileKind::Empty;
 }
 
 EndOfGameType Board::endOfGame() const {
@@ -124,29 +119,22 @@ void Board::print() const {
     int16_t maxX = std::numeric_limits<int16_t>::min(), maxY = maxX;
     int16_t minX = std::numeric_limits<int16_t>::max(), minY = minX;
 
-    for (const auto& chunk : board_ | std::views::values) {
-        for (int16_t dx = 0; dx < static_cast<int16_t>(Chunk::SIZE); ++dx) {
-            for (int16_t dy = 0; dy < static_cast<int16_t>(Chunk::SIZE); ++dy) {
-                const Coordinate global = chunk.getGlobal(dx, dy);
-                if (!chunk.isEmpty(global)) {
-                    maxX = std::max(maxX, global.x);
-                    minX = std::min(minX, global.x);
-                    maxY = std::max(maxY, global.y);
-                    minY = std::min(minY, global.y);
-                }
-            }
+    for (int16_t x = 0; x < static_cast<int16_t>(SIZE); ++x) {
+        for (int16_t y = 0; y < static_cast<int16_t>(SIZE); ++y) {
+            if (!isOccupied(x, y)) continue;
+
+            maxX = std::max(maxX, x);
+            minX = std::min(minX, x);
+            maxY = std::max(maxY, y);
+            minY = std::min(minY, y);
         }
     }
 
     for (int16_t y = maxY; y >= minY; --y) {
-        for (int16_t i = 0; i < y - minY; ++i) std::cout << ' ';
+        for (int16_t i = 0; i < y - minY; ++i) std::cout << "  ";
 
         for (int16_t x = minX; x <= maxX; ++x) {
-            const Coordinate coords{x, y};
-            const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
-            auto it = board_.find(chunkBase);
-            const TileKind kind = (it == board_.end()) ? TileKind::Empty : it->second.get(coords);
-
+            const TileKind kind = board_[x][y];
             char c = '.';
             if (kind == TileKind::White)
                 c = 'X';
@@ -160,14 +148,8 @@ void Board::print() const {
 
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     const Coordinate coords{x, y};
-    const Coordinate chunkBase = Chunk::chunkBaseCoords(coords);
 
-    auto it = board_.find(chunkBase);
-    if (it == board_.end()) {
-        it = board_.emplace(chunkBase, chunkBase).first;
-    }
-
-    it->second.set(kind, coords);
+    board_[coords.x][coords.y] = kind;
 
     if (kind == TileKind::Empty) return;
 
@@ -188,16 +170,12 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
 }
 
 Coordinate Board::findAlignmentEnd(const Coordinate origin, const int16_t dx, const int16_t dy,
-                                   const TileKind kind) {
+                                   const TileKind kind) const {
     Coordinate last = origin;
     for (int16_t i = 1; std::cmp_less_equal(i, GameRuleConstants::WINNING_ALIGNMENT_LENGTH); ++i) {
-        // TODO: If we later auto generate new chunks when there's a tile near the edge, we
-        //  might not need to check for out of bounds here.
         const Coordinate check{static_cast<int16_t>(origin.x + i * dx),
                                static_cast<int16_t>(origin.y + i * dy)};
-        const Coordinate checkChunkBase = Chunk::chunkBaseCoords(check);
-        const auto checkIt = board_.find(checkChunkBase);
-        if (checkIt == board_.end() || checkIt->second.get(check) != kind) break;
+        if (board_[check.x][check.y] != kind) break;
         last = check;
     }
 

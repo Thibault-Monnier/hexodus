@@ -32,7 +32,7 @@ class Game {
 
     void reset() {
         board_ = Board();
-        board_.makeMove({0, 0});
+        board_.makeMove({Board::SIZE / 2, Board::SIZE / 2});
         engine_.reset();
     }
 

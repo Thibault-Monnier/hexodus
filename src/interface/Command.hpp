@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/board/Chunk.hpp"
+#include "core/board/Coordinate.hpp"
 
 class Command {
    public:
