@@ -4,11 +4,7 @@
 #include <ranges>
 
 Move Engine::findBestMove(const uint16_t depth) {
-    // The transposition table is useless between calls: the number of pieces on the board is
-    // strictly increasing, so if the board has advanced, all stored boards while have lower
-    // search depths.
-    counter_ = 0;
-    transpositionTable_.clear();
+    reset();
 
     initialDepth_ = depth;
 
@@ -27,13 +23,21 @@ Move Engine::findBestMove(const uint16_t depth) {
         std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
     std::cout << "Evaluation: " << eval << "\n";
-    std::cout << "Used transposition table " << counter_ << " times.\n";
+    std::cout << "Best move: (" << bestMove.coord1.x << ", " << bestMove.coord1.y << ") and ("
+              << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
+    std::cout << "Nodes evaluated: " << nodesEvaluated_ << "\n";
+    std::cout << "Alpha-beta cutoffs: " << alphaBetaCutoffs_ << "\n";
+    std::cout << "Generated moves: " << generatedMovesCounter_ << "\n";
+    std::cout << "Possible moves calls: " << possibleMovesCounter_ << "\n";
+    std::cout << "Transposition table hits: " << ttHitCounter_ << "\n";
     std::cout << "Time taken: " << duration << " ms\n";
 
     return bestMove;
 }
 
 Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Move* bestMoveOut) {
+    nodesEvaluated_++;
+
     if (remainingDepth == 0 || board_.endOfGame() != EndOfGameType::None) {
         return evaluate(remainingDepth);
     }
@@ -43,11 +47,12 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
 
     const auto it = transpositionTable_.find(board_.hash());
     if (it != transpositionTable_.end()) {
+        ttHitCounter_++;
+
         ttMove = it->second.bestMove;
         hasTtMove = true;
 
         if (it->second.remainingDepth >= remainingDepth) {
-            counter_++;
             const Score evaluation = it->second.score;
 
             if (it->second.flag == TTFlag::LowerBound)
@@ -67,6 +72,8 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     Move bestMoveInThisNode;
 
     const std::vector<Move> moves = board_.possibleMoves();
+    possibleMovesCounter_++;
+    generatedMovesCounter_ += moves.size();
 
     std::vector<std::pair<int, Move>> scoredMoves;
     scoredMoves.reserve(moves.size());
@@ -97,7 +104,10 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
             if (bestMoveOut) *bestMoveOut = move;
         }
 
-        if (alpha >= beta) break;
+        if (alpha >= beta) {
+            alphaBetaCutoffs_++;
+            break;
+        }
     }
 
     const TTFlag flag = (bestEvaluation <= originalAlpha)  ? TTFlag::UpperBound

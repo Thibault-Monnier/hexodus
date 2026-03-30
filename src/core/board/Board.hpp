@@ -41,8 +41,6 @@ class Board {
     uint64_t zobristHash_ = 0;
 
    public:
-    int counter = 0;
-
     [[nodiscard]] bool isWhiteToMove() const { return whiteToMove_; }
     [[nodiscard]] uint64_t hash() const { return zobristHash_; }
     [[nodiscard]] const auto& alignments() const { return alignments_; }

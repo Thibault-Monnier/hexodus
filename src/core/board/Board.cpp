@@ -43,8 +43,6 @@ void Board::undoMove() {
         return;
     }
 
-    counter++;
-
     const Move move = popLastMove();
 
     // Undo pieces

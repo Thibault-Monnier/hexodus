@@ -21,20 +21,12 @@ int main() {
                 game.makeMove(moveCommand.getCoord1(), moveCommand.getCoord2());
                 break;
             }
-            case Command::Kind::MoveRequest: {
-                const Move bestMove = game.playBestMove(4);
-                std::cout << "Best move: (" << bestMove.coord1.x << ", " << bestMove.coord1.y
-                          << ") and (" << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
-                std::cout << "Moves undone: " << game.getBoard().counter << "\n";
+            case Command::Kind::MoveRequest:
+                game.playBestMove(4);
                 break;
-            }
-            case Command::Kind::Analyse: {
-                const Move bestMove = game.findBestMove(4);
-                std::cout << "Best move: (" << bestMove.coord1.x << ", " << bestMove.coord1.y
-                          << ") and (" << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
-                std::cout << "Moves undone: " << game.getBoard().counter << "\n";
+            case Command::Kind::Analyse:
+                game.findBestMove(4);
                 break;
-            }
             case Command::Kind::Undo:
                 std::cout << "Undoing last move...\n";
                 game.undoMove();

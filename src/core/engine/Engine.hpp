@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
 
 #include "core/board/Board.hpp"
 
@@ -25,12 +24,24 @@ class Engine {
 
     uint16_t initialDepth_ = 0;
 
-    int counter_ = 0;
+    uint32_t nodesEvaluated_ = 0;
+    uint32_t alphaBetaCutoffs_ = 0;
+    uint32_t possibleMovesCounter_ = 0;
+    uint32_t generatedMovesCounter_ = 0;
+    uint32_t ttHitCounter_ = 0;
 
    public:
     explicit Engine(Board& board) : board_(board) {}
 
-    void reset() { transpositionTable_.clear(); }
+    void reset() {
+        transpositionTable_.clear();
+        initialDepth_ = 0;
+        nodesEvaluated_ = 0;
+        alphaBetaCutoffs_ = 0;
+        possibleMovesCounter_ = 0;
+        generatedMovesCounter_ = 0;
+        ttHitCounter_ = 0;
+    }
 
     /// Uses a minimax search algorithm to determine the best move for the current player.
     Move findBestMove(uint16_t depth);
