@@ -10,12 +10,13 @@
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
 
-void Board::makeMove(const Move move) {
+void Board::makeMove(const Move move, const bool validate) {
     const Coordinate coord1 = move.coord1, coord2 = move.coord2;
 
     const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
 
-    if (!validateMove(move)) return;
+    if (validate && !validateMove(move)) return;
+    assert(validateMove(move));
 
     set(tileKind, coord1.x, coord1.y);
     set(tileKind, coord2.x, coord2.y);

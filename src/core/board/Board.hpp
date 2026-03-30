@@ -54,7 +54,7 @@ class Board {
 
     /// Updates the board state by placing pieces according to the move. If the move is invalid,
     /// prints an error message and does not update the board.
-    void makeMove(Move move);
+    void makeMove(Move move, bool validate = true);
     /// Single piece move for the first move of the game.
     void makeMove(Coordinate coord1);
 

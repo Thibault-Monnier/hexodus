@@ -84,7 +84,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
 
     // Iterate over the sorted moves
     for (const auto& move : moves) {
-        board_.makeMove(move);
+        board_.makeMove(move, false);
         const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
         board_.undoMove();
 
