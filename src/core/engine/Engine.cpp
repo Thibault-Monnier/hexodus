@@ -4,7 +4,7 @@
 #include <ranges>
 
 Move Engine::findBestMove(const uint16_t depth) {
-    reset();
+    resetCounters();
 
     initialDepth_ = depth;
 
@@ -30,6 +30,7 @@ Move Engine::findBestMove(const uint16_t depth) {
     std::cout << "Generated moves: " << generatedMovesCounter_ << "\n";
     std::cout << "Possible moves calls: " << possibleMovesCounter_ << "\n";
     std::cout << "Transposition table hits: " << ttHitCounter_ << "\n";
+    std::cout << "Transposition table collisions: " << ttCollisionCounter_ << "\n";
     std::cout << "Time taken: " << duration << " ms\n";
 
     return bestMove;
@@ -45,23 +46,28 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     Move ttMove;
     bool hasTtMove = false;
 
-    const auto it = transpositionTable_.find(board_.hash());
-    if (it != transpositionTable_.end()) {
+    bool ttCollision = false;
+
+    const TTEntry& entry = transpositionTable_[board_.hash() % transpositionTable_.size()];
+    if (entry.hash == board_.hash()) {
         ttHitCounter_++;
 
-        ttMove = it->second.bestMove;
+        ttMove = entry.bestMove;
         hasTtMove = true;
 
-        if (it->second.remainingDepth >= remainingDepth) {
-            const Score evaluation = it->second.score;
+        if (entry.remainingDepth >= remainingDepth) {
+            const Score evaluation = entry.score;
 
-            if (it->second.flag == TTFlag::LowerBound)
+            if (entry.flag == TTFlag::LowerBound)
                 alpha = std::max(alpha, evaluation);
-            else if (it->second.flag == TTFlag::UpperBound)
+            else if (entry.flag == TTFlag::UpperBound)
                 beta = std::min(beta, evaluation);
 
-            if (it->second.flag == TTFlag::Exact || alpha >= beta) return evaluation;
+            if (entry.flag == TTFlag::Exact || alpha >= beta) return evaluation;
         }
+    } else if (entry.hash != 0) {
+        ttCollisionCounter_++;
+        ttCollision = true;
     }
 
     const Score originalAlpha = alpha, originalBeta = beta;
@@ -109,12 +115,15 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
                         : (bestEvaluation >= originalBeta) ? TTFlag::LowerBound
                                                            : TTFlag::Exact;
 
-    transpositionTable_[board_.hash()] = TTEntry{
-        .bestMove = bestMoveInThisNode,
-        .remainingDepth = remainingDepth,
-        .score = bestEvaluation,
-        .flag = flag,
-    };
+    if (!ttCollision || entry.remainingDepth <= remainingDepth) {
+        transpositionTable_[board_.hash() % transpositionTable_.size()] = TTEntry{
+            .bestMove = bestMoveInThisNode,
+            .remainingDepth = remainingDepth,
+            .score = bestEvaluation,
+            .flag = flag,
+            .hash = board_.hash(),
+        };
+    }
 
     return bestEvaluation;
 }
