@@ -111,7 +111,7 @@ std::vector<Move> Board::possibleMoves() const {
     moves.reserve(tiles.size() * (tiles.size() - 1));
     for (size_t i = 0; i < tiles.size(); ++i) {
         const Coordinate tile1 = tiles[i];
-        for (size_t j = 0; j < tiles.size(); ++j) {
+        for (size_t j = i + 1; j < tiles.size(); ++j) {
             const Coordinate tile2 = tiles[j];
             if (tile1 == tile2) continue;
 
