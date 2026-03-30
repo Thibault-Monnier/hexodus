@@ -20,7 +20,6 @@ class Engine {
     static constexpr Score WIN_SCORE = 10'000;
 
     Board& board_;
-    std::vector<Move> moveHistory_;
 
     ankerl::unordered_dense::map<size_t, TTEntry> transpositionTable_;
 
@@ -31,10 +30,7 @@ class Engine {
    public:
     explicit Engine(Board& board) : board_(board) {}
 
-    void reset() {
-        moveHistory_.clear();
-        transpositionTable_.clear();
-    }
+    void reset() { transpositionTable_.clear(); }
 
     /// Uses a minimax search algorithm to determine the best move for the current player.
     Move findBestMove(uint16_t depth);

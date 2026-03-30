@@ -1,6 +1,7 @@
 #include "Board.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <ranges>
@@ -8,19 +9,6 @@
 
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
-
-bool Board::isOccupied(const int16_t x, const int16_t y) const {
-    return get(x, y) != TileKind::Empty;
-}
-
-EndOfGameType Board::endOfGame() const {
-    for (const auto [start, end] : alignments_ | std::views::keys) {
-        const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
-        if (length >= GameRuleConstants::WINNING_ALIGNMENT_LENGTH) return EndOfGameType::Win;
-    }
-
-    return EndOfGameType::None;
-}
 
 void Board::makeMove(const Move move) {
     const Coordinate coord1 = move.coord1, coord2 = move.coord2;
@@ -70,10 +58,18 @@ void Board::undoMove() {
     updateHash(coord2.x, coord2.y, tileKind);
 
     // Undo alignments
-    std::erase_if(alignments_, [move](const auto& alignment) {
-        const Coordinate addedCoord = alignment.second;
-        return addedCoord == move.coord1 || addedCoord == move.coord2;
-    });
+    for (auto it = alignments_.begin(); it != alignments_.end();) {
+        const Coordinate addedCoord = it->second;
+        if (addedCoord == move.coord1 || addedCoord == move.coord2) {
+            const auto& [start, end] = it->first;
+            const uint16_t length =
+                std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
+            alignmentCount_[length]--;
+            it = alignments_.erase(it);
+        } else {
+            ++it;
+        }
+    }
 
     whiteToMove_ = !whiteToMove_;
 }
@@ -87,22 +83,38 @@ std::vector<Move> Board::possibleMoves() const {
     const auto [coord1, coord2] = lastMove();
     const auto [coord3, coord4] = moveHistory_.size() >= 2 ? beforeLastMove() : lastMove();
 
-    ankerl::unordered_dense::set<Coordinate> tiles;
+    std::vector<Coordinate> tiles;
+    tiles.reserve(OFFSETS.size() * 4 * 2);
+
+    std::bitset<static_cast<size_t>(SIZE * SIZE)> seen;
+
+    auto tryAdd = [&](const Coordinate coord) {
+        if (isOccupied(coord.x, coord.y)) return;
+
+        const size_t index = static_cast<size_t>(coord.x + SIZE / 2) * SIZE +
+                             static_cast<size_t>(coord.y + SIZE / 2);
+        if (!seen.test(index)) {
+            seen.set(index);
+            tiles.push_back(coord);
+        }
+    };
+
     // Push each offset around the 4 coords
     for (const Coordinate base : {coord1, coord2, coord3, coord4}) {
         for (const Coordinate offset : OFFSETS) {
-            const Coordinate coord = base + offset;
-            const Coordinate coordOther = base - offset;
-            if (!isOccupied(coord.x, coord.y)) tiles.insert(coord);
-            if (!isOccupied(coordOther.x, coordOther.y)) tiles.insert(coordOther);
+            tryAdd(base + offset);
+            tryAdd(base - offset);
         }
     }
 
     std::vector<Move> moves;
     moves.reserve(tiles.size() * (tiles.size() - 1));
-    for (const Coordinate tile1 : tiles) {
-        for (const Coordinate tile2 : tiles) {
+    for (size_t i = 0; i < tiles.size(); ++i) {
+        const Coordinate tile1 = tiles[i];
+        for (size_t j = 0; j < tiles.size(); ++j) {
+            const Coordinate tile2 = tiles[j];
             if (tile1 == tile2) continue;
+
             moves.emplace_back(tile1, tile2);
         }
     }
@@ -165,18 +177,24 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
         const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
         if (length >= 2) {
             alignments_.emplace_back(std::pair{start, end}, coords);
+            alignmentCount_[length]++;
         }
     }
 }
 
-Coordinate Board::findAlignmentEnd(const Coordinate origin, const int16_t dx, const int16_t dy,
-                                   const TileKind kind) const {
+__attribute__((always_inline)) Coordinate Board::findAlignmentEnd(const Coordinate origin,
+                                                                  const int16_t dx,
+                                                                  const int16_t dy,
+                                                                  const TileKind kind) const {
     Coordinate last = origin;
-    for (int16_t i = 1; std::cmp_less_equal(i, GameRuleConstants::WINNING_ALIGNMENT_LENGTH); ++i) {
-        const Coordinate check{static_cast<int16_t>(origin.x + i * dx),
-                               static_cast<int16_t>(origin.y + i * dy)};
-        if (get(check.x, check.y) != kind) break;
-        last = check;
+
+    for (uint32_t i = 1; i < GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++i) {
+        const auto x = static_cast<int16_t>(origin.x + i * dx);
+        const auto y = static_cast<int16_t>(origin.y + i * dy);
+        if (get(x, y) != kind) break;
+
+        last.x = x;
+        last.y = y;
     }
 
     return last;

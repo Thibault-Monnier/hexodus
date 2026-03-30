@@ -7,6 +7,7 @@
 
 #include "Coordinate.hpp"
 #include "Move.hpp"
+#include "core/GameRuleConstants.hpp"
 
 enum class TileKind : uint8_t { Empty, Black, White };
 
@@ -29,6 +30,9 @@ class Board {
     /// engine.
     std::vector<std::pair<std::pair<Coordinate, Coordinate>, Coordinate>> alignments_;
 
+    /// Stores the number of alignments of each length for both players
+    std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCount_ = {};
+
     /// Stores the history of moves made, used for undoing moves and possible moves generation.
     std::vector<Move> moveHistory_;
 
@@ -39,12 +43,15 @@ class Board {
    public:
     int counter = 0;
 
-    [[nodiscard]] bool isOccupied(int16_t x, int16_t y) const;
     [[nodiscard]] bool isWhiteToMove() const { return whiteToMove_; }
     [[nodiscard]] uint64_t hash() const { return zobristHash_; }
     [[nodiscard]] const auto& alignments() const { return alignments_; }
 
-    [[nodiscard]] EndOfGameType endOfGame() const;
+    [[nodiscard]] EndOfGameType endOfGame() const {
+        if (alignmentCount_[GameRuleConstants::WINNING_ALIGNMENT_LENGTH] > 0)
+            return EndOfGameType::Win;
+        return EndOfGameType::None;
+    }
 
     /// Updates the board state by placing pieces according to the move. If the move is invalid,
     /// prints an error message and does not update the board.
@@ -67,6 +74,11 @@ class Board {
     }
 
    private:
+    [[nodiscard]] bool isOccupied(const int16_t x, const int16_t y) const {
+        assert(isInBounds(x, y));
+        return get(x, y) != TileKind::Empty;
+    }
+
     void set(TileKind kind, int16_t x, int16_t y);
 
     [[nodiscard]] Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy,

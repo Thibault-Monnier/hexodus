@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "board/Board.hpp"
 #include "board/Move.hpp"
 #include "engine/Engine.hpp"
