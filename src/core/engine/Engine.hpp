@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include "core/board/Board.hpp"
 
 using Score = int16_t;

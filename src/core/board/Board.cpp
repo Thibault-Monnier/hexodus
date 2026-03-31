@@ -7,6 +7,7 @@
 #include <ranges>
 #include <utility>
 
+#include "HexCoordinates.hpp"
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
 
@@ -70,36 +71,45 @@ void Board::undoMove() {
     whiteToMove_ = !whiteToMove_;
 }
 
+consteval auto Board::generateOffsets() {
+    constexpr size_t COUNT = 3ull * NEIGHBOURS_RADIUS * (NEIGHBOURS_RADIUS + 1);
+    std::array<Coordinate, COUNT> offsets{};
+    size_t index = 0;
+    for (int16_t dx = -NEIGHBOURS_RADIUS; dx <= NEIGHBOURS_RADIUS; ++dx) {
+        for (int16_t dy = -NEIGHBOURS_RADIUS; dy <= NEIGHBOURS_RADIUS; ++dy) {
+            if (dx == 0 && dy == 0) continue;
+            if (HexCoordinates::hexDistance(dx, dy) > NEIGHBOURS_RADIUS) continue;
+
+            offsets[index++] = Coordinate{dx, dy};
+        }
+    }
+    return offsets;
+}
+
 std::vector<Move> Board::possibleMoves() const {
-    // Half the offsets, for the rest just take the opposite of these
-    // Radius of 2 to avoid too many possible moves -> combinatorial explosion
-    constexpr std::array<Coordinate, 9> OFFSETS = {
-        Coordinate{1, 0}, {0, 1}, {-1, 1}, {2, 0}, {1, 1}, {0, 2}, {-1, 2}, {-2, 2}, {-2, 1}};
+    constexpr auto OFFSETS = generateOffsets();
 
     const auto [coord1, coord2] = lastMove();
     const auto [coord3, coord4] = moveHistory_.size() >= 2 ? beforeLastMove() : lastMove();
 
     std::vector<Coordinate> tiles;
-    tiles.reserve(OFFSETS.size() * 4 * 2);
+    tiles.reserve(OFFSETS.size() * 4);
 
     std::bitset<static_cast<size_t>(SIZE * SIZE)> seen;
-
-    auto tryAdd = [&](const Coordinate coord) {
-        if (isOccupied(coord.x, coord.y)) return;
-
-        const size_t index = static_cast<size_t>(coord.x + SIZE / 2) * SIZE +
-                             static_cast<size_t>(coord.y + SIZE / 2);
-        if (!seen.test(index)) {
-            seen.set(index);
-            tiles.push_back(coord);
-        }
-    };
 
     // Push each offset around the 4 coords
     for (const Coordinate base : {coord1, coord2, coord3, coord4}) {
         for (const Coordinate offset : OFFSETS) {
-            tryAdd(base + offset);
-            tryAdd(base - offset);
+            const Coordinate coord = base + offset;
+
+            if (isOccupied(coord.x, coord.y)) continue;
+
+            const size_t index = static_cast<size_t>(coord.x + SIZE / 2) * SIZE +
+                                 static_cast<size_t>(coord.y + SIZE / 2);
+            if (!seen.test(index)) {
+                seen.set(index);
+                tiles.push_back(coord);
+            }
         }
     }
 

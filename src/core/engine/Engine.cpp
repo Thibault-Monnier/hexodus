@@ -1,6 +1,8 @@
 #include "Engine.hpp"
 
 #include <algorithm>
+#include <chrono>
+#include <iostream>
 #include <ranges>
 
 Move Engine::findBestMove(const uint16_t depth) {

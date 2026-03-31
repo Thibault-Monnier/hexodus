@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Coordinate.hpp"
+#include "HexCoordinates.hpp"
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
 #include "support/SizedArray.hpp"
@@ -19,6 +20,8 @@ enum class EndOfGameType : uint8_t { None, Win, Draw };
 class Board {
    public:
     static constexpr int16_t SIZE = 128;
+
+    static constexpr int16_t NEIGHBOURS_RADIUS = 2;
 
    private:
     bool whiteToMove_ = true;
@@ -110,4 +113,6 @@ class Board {
     /// Updates the Zobrist hash by XORing the hash value for the given tile. This can be used
     /// either after doing or undoing a move.
     void updateHash(int16_t x, int16_t y, TileKind kind);
+
+    [[nodiscard]] static consteval auto generateOffsets();
 };
