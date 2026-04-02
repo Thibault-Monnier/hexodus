@@ -9,7 +9,6 @@
 #include "HexCoordinates.hpp"
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
-#include "support/SizedArray.hpp"
 
 enum class TileKind : uint8_t { Empty, Black, White };
 
@@ -19,7 +18,7 @@ enum class EndOfGameType : uint8_t { None, Win, Draw };
 /// things to allow for efficient use in the engine.
 class Board {
    public:
-    static constexpr int16_t SIZE = 128;
+    static constexpr int16_t SIZE = 64;
 
     static constexpr int16_t NEIGHBOURS_RADIUS = 2;
 
@@ -28,14 +27,15 @@ class Board {
 
     std::array<std::array<TileKind, SIZE>, SIZE> board_ = {};
 
-    /// Stores the start and end coordinates of every line of 2 or more consecutive aligned
-    /// pieces of the same color, along with the coordinate of the piece that added the alignment.
-    /// Used to efficiently check for end-of-game conditions and for position evaluation in the
-    /// engine.
-    SizedArray<std::pair<std::pair<Coordinate, Coordinate>, Coordinate>, SIZE * SIZE> alignments_;
+    // Bitboards per axis for each player.
+    std::array<uint64_t, SIZE> whiteBitboardX_{}, whiteBitboardY_{};
+    std::array<uint64_t, SIZE> blackBitboardX_{}, blackBitboardY_{};
+    std::array<uint64_t, 2 * SIZE - 1> whiteBitboardDiag_{}, blackBitboardDiag_{};
 
-    /// Stores the number of alignments of each length for both players
-    std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCount_ = {};
+    /// Stores the number of alignments of each length for white
+    std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCountWhite_ = {};
+    /// Stores the number of alignments of each length for black
+    std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCountBlack_ = {};
 
     /// Stores the history of moves made, used for undoing moves and possible moves generation.
     std::vector<Move> moveHistory_;
@@ -47,12 +47,20 @@ class Board {
    public:
     [[nodiscard]] bool isWhiteToMove() const { return whiteToMove_; }
     [[nodiscard]] uint64_t hash() const { return zobristHash_; }
-    [[nodiscard]] const auto& alignments() const { return alignments_; }
 
     [[nodiscard]] EndOfGameType endOfGame() const {
-        if (alignmentCount_[GameRuleConstants::WINNING_ALIGNMENT_LENGTH] > 0)
+        if (alignmentCountWhite_[GameRuleConstants::WINNING_ALIGNMENT_LENGTH] > 0 ||
+            alignmentCountBlack_[GameRuleConstants::WINNING_ALIGNMENT_LENGTH] > 0)
             return EndOfGameType::Win;
         return EndOfGameType::None;
+    }
+
+    [[nodiscard]] uint32_t countAlignments(const uint32_t length, const bool white) const {
+        assert(length <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH);
+        if (white)
+            return alignmentCountWhite_[length];
+        else
+            return alignmentCountBlack_[length];
     }
 
     /// Updates the board state by placing pieces according to the move. If the move is invalid,
@@ -72,10 +80,15 @@ class Board {
 
     [[nodiscard]] TileKind get(const int16_t x, const int16_t y) const {
         assert(isInBounds(x, y));
-        return board_[x + SIZE / 2][y + SIZE / 2];
+        return board_[asIndex(x)][asIndex(y)];
     }
 
    private:
+    [[nodiscard]] static size_t asIndex(const int16_t a) {
+        assert(isInBounds(a));
+        return a + SIZE / 2;
+    }
+
     [[nodiscard]] bool isOccupied(const int16_t x, const int16_t y) const {
         assert(isInBounds(x, y));
         return get(x, y) != TileKind::Empty;
@@ -89,8 +102,10 @@ class Board {
     /// Checks if the move is valid. If not, prints an error message.
     [[nodiscard]] bool validateMove(const Move& move) const;
 
+    [[nodiscard]] static bool isInBounds(const int16_t a) { return a >= -SIZE / 2 && a < SIZE / 2; }
+
     [[nodiscard]] static bool isInBounds(const int16_t x, const int16_t y) {
-        return x >= -SIZE / 2 && x < SIZE / 2 && y >= -SIZE / 2 && y < SIZE / 2;
+        return isInBounds(x) && isInBounds(y);
     }
 
     [[nodiscard]] Move lastMove() const {

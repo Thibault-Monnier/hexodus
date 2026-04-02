@@ -1,11 +1,9 @@
 #include "Board.hpp"
 
 #include <algorithm>
-#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <ranges>
-#include <utility>
 
 #include "HexCoordinates.hpp"
 #include "Move.hpp"
@@ -47,6 +45,8 @@ void Board::undoMove() {
 
     const Move move = popLastMove();
 
+    whiteToMove_ = !whiteToMove_;
+
     // Undo pieces
     const Coordinate coord1 = move.coord1, coord2 = move.coord2;
     set(TileKind::Empty, coord1.x, coord1.y);
@@ -56,19 +56,6 @@ void Board::undoMove() {
     const TileKind tileKind = whiteToMove_ ? TileKind::Black : TileKind::White;
     updateHash(coord1.x, coord1.y, tileKind);
     updateHash(coord2.x, coord2.y, tileKind);
-
-    // Undo alignments
-    while (!alignments_.empty() &&
-           (alignments_.back().second == move.coord1 || alignments_.back().second == move.coord2)) {
-        const auto& [startEnd, _] = alignments_.back();
-        const uint16_t length = std::max(std::abs(startEnd.first.x - startEnd.second.x),
-                                         std::abs(startEnd.first.y - startEnd.second.y)) +
-                                1;
-        alignmentCount_[length]--;
-        alignments_.pop_back();
-    }
-
-    whiteToMove_ = !whiteToMove_;
 }
 
 consteval auto Board::generateOffsets() {
@@ -104,8 +91,7 @@ std::vector<Move> Board::possibleMoves() const {
 
             if (isOccupied(coord.x, coord.y)) continue;
 
-            const size_t index = static_cast<size_t>(coord.x + SIZE / 2) * SIZE +
-                                 static_cast<size_t>(coord.y + SIZE / 2);
+            const size_t index = asIndex(coord.x) * SIZE + asIndex(coord.y);
             if (!seen.test(index)) {
                 seen.set(index);
                 tiles.push_back(coord);
@@ -167,25 +153,74 @@ void Board::print() const {
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     const Coordinate coords{x, y};
 
-    board_[coords.x + SIZE / 2][coords.y + SIZE / 2] = kind;
+    const size_t idxX = asIndex(coords.x);
+    const size_t idxY = asIndex(coords.y);
 
-    if (kind == TileKind::Empty) return;
+    board_[idxX][idxY] = kind;
 
-    // Update alignments
-    // Find new alignments in all 6 directions
-    constexpr std::array<std::pair<int16_t, int16_t>, 3> DIRECTIONS = {{{1, 0}, {0, 1}, {-1, 1}}};
+    auto clearAlignments = [this](auto& bitboard, const size_t idx) {
+        uint64_t xBits = bitboard[idx];
+        int lastAmount = 0;
+        for (size_t len = 1; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++len) {
+            const int amount = std::popcount(xBits);
 
-    for (const auto& [dx, dy] : DIRECTIONS) {
-        const Coordinate start = findAlignmentEnd(coords, dx, dy, kind);
-        const Coordinate end = findAlignmentEnd(coords, -dx, -dy, kind);
+            if (len >= 2) {
+                const int delta = lastAmount - amount;
+                if (whiteToMove_)
+                    alignmentCountWhite_[len] -= delta;
+                else
+                    alignmentCountBlack_[len] -= delta;
+            }
 
-        // Add alignment if length >= 2
-        const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
-        if (length >= 2) {
-            alignments_.emplace_back(std::pair{start, end}, coords);
-            alignmentCount_[length]++;
+            lastAmount = amount;
+            xBits &= xBits >> 1;
         }
+    };
+
+    auto updateAlignments = [this](const auto& bitboard, const size_t idx) {
+        uint64_t xBits = bitboard[idx];
+        int lastAmount = 0;
+        for (size_t len = 1; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++len) {
+            const int amount = std::popcount(xBits);
+
+            if (len >= 2) {
+                const int delta = lastAmount - amount;
+                if (whiteToMove_)
+                    alignmentCountWhite_[len] += delta;
+                else
+                    alignmentCountBlack_[len] += delta;
+            }
+
+            lastAmount = amount;
+            xBits &= xBits >> 1;
+        }
+    };
+
+    auto& bitboardX = whiteToMove_ ? whiteBitboardX_ : blackBitboardX_;
+    auto& bitboardY = whiteToMove_ ? whiteBitboardY_ : blackBitboardY_;
+    auto& bitboardDiag = whiteToMove_ ? whiteBitboardDiag_ : blackBitboardDiag_;
+
+    clearAlignments(bitboardX, idxY);
+    clearAlignments(bitboardY, idxX);
+    clearAlignments(bitboardDiag, idxX + idxY);
+
+    const uint64_t maskX = 1ull << idxX;
+    const uint64_t maskY = 1ull << idxY;
+    const uint64_t maskDiag = 1ull << idxY;
+
+    if (kind == TileKind::Empty) {
+        bitboardX[idxY] &= ~maskX;
+        bitboardY[idxX] &= ~maskY;
+        bitboardDiag[idxX + idxY] &= ~maskDiag;
+    } else {
+        bitboardX[idxY] |= maskX;
+        bitboardY[idxX] |= maskY;
+        bitboardDiag[idxX + idxY] |= maskDiag;
     }
+
+    updateAlignments(bitboardX, idxY);
+    updateAlignments(bitboardY, idxX);
+    updateAlignments(bitboardDiag, idxX + idxY);
 }
 
 __attribute__((always_inline)) Coordinate Board::findAlignmentEnd(const Coordinate origin,

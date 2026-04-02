@@ -143,18 +143,11 @@ Score Engine::evaluate(const uint16_t remainingDepth) const {
         return board_.isWhiteToMove() ? -abs : abs;
     }
 
-    const auto& alignments = board_.alignments();
-
     Score whiteScore = 0, blackScore = 0;
-    for (const auto& startEnd : alignments | std::views::keys) {
-        const auto& [start, end] = startEnd;
-        const uint16_t length = std::max(std::abs(end.x - start.x), std::abs(end.y - start.y)) + 1;
-        const TileKind kind = board_.get(start.x, start.y);
-        const Score value = static_cast<Score>(length * length);
-        if (kind == TileKind::White)
-            whiteScore += value;
-        else
-            blackScore += value;
+    for (uint32_t length = 2; length <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++length) {
+        const auto value = static_cast<Score>(length * length);
+        whiteScore += board_.countAlignments(length, true) * value;
+        blackScore += board_.countAlignments(length, false) * value;
     }
 
     return static_cast<Score>(whiteScore - blackScore);
