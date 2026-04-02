@@ -53,7 +53,7 @@ void Board::undoMove() {
     set(TileKind::Empty, coord2.x, coord2.y);
 
     // Undo hash
-    const TileKind tileKind = whiteToMove_ ? TileKind::Black : TileKind::White;
+    const TileKind tileKind = whiteToMove_ ? TileKind::White : TileKind::Black;
     updateHash(coord1.x, coord1.y, tileKind);
     updateHash(coord2.x, coord2.y, tileKind);
 }
