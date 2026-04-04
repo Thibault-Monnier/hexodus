@@ -1,6 +1,7 @@
 #include "Board.hpp"
 
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <ranges>
@@ -115,11 +116,6 @@ std::vector<Move> Board::possibleMoves() const {
 }
 
 void Board::print() const {
-    if (board_.empty()) {
-        std::cout << "Empty board\n";
-        return;
-    }
-
     int16_t maxX = std::numeric_limits<int16_t>::min(), maxY = maxX;
     int16_t minX = std::numeric_limits<int16_t>::max(), minY = minX;
 
@@ -134,20 +130,53 @@ void Board::print() const {
         }
     }
 
+    constexpr std::string_view COLOR_EMPTY = "\033[1;90";
+    constexpr std::string_view COLOR_ORIGIN = "\033[1;93";
+    constexpr std::string_view COLOR_WHITE = "\033[1;33";
+    constexpr std::string_view COLOR_BLACK = "\033[1;94";
+    constexpr std::string_view LAST_MOVE_SUFFIX = ";4";
+    constexpr std::string_view COLOR_AXIS = "\033[3m";
+    constexpr std::string_view RESET = "\033[0m";
+
     for (int16_t y = maxY; y >= minY; --y) {
+        std::cout << COLOR_AXIS << std::setw(3) << std::right  << y  << RESET << ' ';
+
         for (int16_t i = 0; i < y - minY; ++i) std::cout << "  ";
 
         for (int16_t x = minX; x <= maxX; ++x) {
             const TileKind kind = get(x, y);
-            char c = '.';
+            std::string_view c = "·";
             if (kind == TileKind::White)
-                c = 'X';
+                c = "X";
             else if (kind == TileKind::Black)
-                c = 'O';
-            std::cout << c << ' ';
+                c = "O";
+
+            std::string color = std::string(COLOR_EMPTY);
+            if (x == 0 && y == 0)
+                color = COLOR_ORIGIN;
+            else if (kind == TileKind::White)
+                color = COLOR_WHITE;
+            else if (kind == TileKind::Black)
+                color = COLOR_BLACK;
+
+            if (moveHistory_.size() >= 1 &&
+                ((x == lastMove().coord1.x && y == lastMove().coord1.y) ||
+                 (x == lastMove().coord2.x && y == lastMove().coord2.y))) {
+                color += LAST_MOVE_SUFFIX;
+            }
+            color += 'm';
+
+            std::cout << color << c << RESET << ' ';
         }
+
         std::cout << '\n';
     }
+
+    std::cout << "   ";
+    for (int16_t x = minX; x <= maxX; ++x) {
+        std::cout << COLOR_AXIS << std::left << std::setw(2) << std::abs(x % 10) << RESET;
+    }
+    std::cout << '\n';
 }
 
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
