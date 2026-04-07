@@ -58,4 +58,8 @@ class Engine {
     /// Evaluates the current board state and returns an evaluation score. Positive scores indicate
     /// an advantage for the current player, while negative scores indicate a disadvantage.
     [[nodiscard]] Score evaluate(uint16_t remainingDepth) const;
+
+    [[nodiscard]] bool isWinScore(const Score score) const {
+        return std::abs(score) >= WIN_SCORE - initialDepth_;
+    }
 };

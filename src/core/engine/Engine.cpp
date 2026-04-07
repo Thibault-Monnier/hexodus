@@ -16,7 +16,16 @@ Move Engine::findBestMove(const uint16_t depth) {
         initialDepth_ = d;
         eval = minimax(d, std::numeric_limits<Score>::min(), std::numeric_limits<Score>::max(),
                        &bestMove);
-        std::cout << "Depth: " << d << ", Evaluation: " << eval << "\n";
+
+        const bool won = isWinScore(eval);
+        std::cout << "Depth: " << d << ", Evaluation: "
+                  << (won ? "Win in " + std::to_string(WIN_SCORE - std::abs(eval)) + " moves"
+                          : std::to_string(eval))
+                  << "\n";
+
+        if (won) {
+            break;
+        }
     }
 
     const auto endTime = std::chrono::high_resolution_clock::now();
