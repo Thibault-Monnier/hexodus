@@ -22,10 +22,10 @@ int main() {
                 break;
             }
             case Command::Kind::MoveRequest:
-                game.playBestMove(3);
+                game.playBestMove(4);
                 break;
             case Command::Kind::Analyse:
-                game.findBestMove(3);
+                game.findBestMove(4);
                 break;
             case Command::Kind::Undo:
                 std::cout << "Undoing last move...\n";

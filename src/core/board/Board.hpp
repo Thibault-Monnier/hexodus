@@ -72,8 +72,8 @@ class Board {
     /// Reverts the board state to before the last move was made.
     void undoMove();
 
-    /// Returns a list of all valid moves for the current player.
-    [[nodiscard]] std::vector<Move> possibleMoves() const;
+    /// Generates all possible moves for the current board state and stores them in outMoves.
+    void generatePossibleMoves(std::vector<Move>& outMoves) const;
 
     /// Prints a representation of the board to the console.
     void print() const;

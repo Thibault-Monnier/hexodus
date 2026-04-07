@@ -74,7 +74,7 @@ consteval auto Board::generateOffsets() {
     return offsets;
 }
 
-std::vector<Move> Board::possibleMoves() const {
+void Board::generatePossibleMoves(std::vector<Move>& outMoves) const {
     constexpr auto OFFSETS = generateOffsets();
 
     const auto [coord1, coord2] = lastMove();
@@ -100,19 +100,17 @@ std::vector<Move> Board::possibleMoves() const {
         }
     }
 
-    std::vector<Move> moves;
-    moves.reserve(tiles.size() * (tiles.size() - 1));
+    assert(outMoves.empty());
+    outMoves.reserve(tiles.size() * (tiles.size() - 1));
     for (size_t i = 0; i < tiles.size(); ++i) {
         const Coordinate tile1 = tiles[i];
         for (size_t j = i + 1; j < tiles.size(); ++j) {
             const Coordinate tile2 = tiles[j];
             if (tile1 == tile2) continue;
 
-            moves.emplace_back(tile1, tile2);
+            outMoves.emplace_back(tile1, tile2);
         }
     }
-
-    return moves;
 }
 
 void Board::print() const {
@@ -139,7 +137,7 @@ void Board::print() const {
     constexpr std::string_view RESET = "\033[0m";
 
     for (int16_t y = maxY; y >= minY; --y) {
-        std::cout << COLOR_AXIS << std::setw(3) << std::right  << y  << RESET << ' ';
+        std::cout << COLOR_AXIS << std::setw(3) << std::right << y << RESET << ' ';
 
         for (int16_t i = 0; i < y - minY; ++i) std::cout << " ";
 

@@ -79,37 +79,47 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
         white ? std::numeric_limits<Score>::min() : std::numeric_limits<Score>::max();
     Move bestMoveInThisNode;
 
-    std::vector<Move> moves = board_.possibleMoves();
+    std::vector<Move> moves;
+    board_.generatePossibleMoves(moves);
     possibleMovesCounter_++;
     generatedMovesCounter_ += moves.size();
 
-    for (size_t i = 0; i < moves.size(); ++i) {
-        if (hasTtMove && moves[i] == ttMove) {
-            std::swap(moves[0], moves[i]);
-            break;
+    std::array<std::vector<Move>, 5> buckets;
+    for (const Move move : moves) {
+        Score score = 0;
+
+        if (hasTtMove && move == ttMove)
+            score = 4;
+        else {
+            const int16_t dist = HexCoordinates::hexDistance(move.coord1, move.coord2);
+            if (dist == 1) score = 3;
         }
+
+        buckets[score].push_back(move);
     }
 
     // Iterate over the sorted moves
-    for (const auto& move : moves) {
-        board_.makeMove(move, false);
-        const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
-        board_.undoMove();
+    for (const std::vector<Move>& bucket : std::ranges::reverse_view(buckets)) {
+        for (const Move move : bucket) {
+            board_.makeMove(move, false);
+            const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
+            board_.undoMove();
 
-        if (white)
-            alpha = std::max(alpha, evaluation);
-        else
-            beta = std::min(beta, evaluation);
+            if (white)
+                alpha = std::max(alpha, evaluation);
+            else
+                beta = std::min(beta, evaluation);
 
-        if (white ? evaluation > bestEvaluation : evaluation < bestEvaluation) {
-            bestEvaluation = evaluation;
-            bestMoveInThisNode = move;
-            if (bestMoveOut) *bestMoveOut = move;
-        }
+            if (white ? evaluation > bestEvaluation : evaluation < bestEvaluation) {
+                bestEvaluation = evaluation;
+                bestMoveInThisNode = move;
+                if (bestMoveOut) *bestMoveOut = move;
+            }
 
-        if (alpha >= beta) {
-            alphaBetaCutoffs_++;
-            break;
+            if (alpha >= beta) {
+                alphaBetaCutoffs_++;
+                break;
+            }
         }
     }
 
