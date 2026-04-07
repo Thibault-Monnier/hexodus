@@ -175,6 +175,18 @@ void Board::print() const {
         std::cout << COLOR_AXIS << std::left << std::setw(2) << std::abs(x % 10) << RESET;
     }
     std::cout << '\n';
+
+    // Print some stats
+    std::cout << "Stats:\n";
+    std::cout << "  White alignments: ";
+    for (size_t len = 2; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++len) {
+        std::cout << len << ": " << alignmentCountWhite_[len] << "  ";
+    }
+    std::cout << "\n  Black alignments: ";
+    for (size_t len = 2; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++len) {
+        std::cout << len << ": " << alignmentCountBlack_[len] << "  ";
+    }
+    std::cout << '\n';
 }
 
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
@@ -185,41 +197,37 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
 
     board_[idxX][idxY] = kind;
 
-    auto clearAlignments = [this](auto& bitboard, const size_t idx) {
+    auto updateAlignments = [this](const auto& bitboard, const size_t idx,
+                                   const bool clearing = false) {
         uint64_t xBits = bitboard[idx];
-        int lastAmount = 0;
-        for (size_t len = 1; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++len) {
-            const int amount = std::popcount(xBits);
+
+        int c1 = std::popcount(xBits);
+        xBits &= xBits >> 1;
+        int c2 = std::popcount(xBits);
+
+        for (size_t len = 2; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1; ++len) {
+            xBits &= xBits >> 1;
+
+            const int c3 = std::popcount(xBits);
 
             if (len >= 2) {
-                const int delta = lastAmount - amount;
-                if (whiteToMove_)
-                    alignmentCountWhite_[len] -= delta;
-                else
-                    alignmentCountBlack_[len] -= delta;
+                // The amount of alignments of length = len
+                const int amount = c1 - 2 * c2 + c3;
+                if (clearing) {
+                    if (whiteToMove_)
+                        alignmentCountWhite_[len - 1] -= amount;
+                    else
+                        alignmentCountBlack_[len - 1] -= amount;
+                } else {
+                    if (whiteToMove_)
+                        alignmentCountWhite_[len - 1] += amount;
+                    else
+                        alignmentCountBlack_[len - 1] += amount;
+                }
             }
 
-            lastAmount = amount;
-            xBits &= xBits >> 1;
-        }
-    };
-
-    auto updateAlignments = [this](const auto& bitboard, const size_t idx) {
-        uint64_t xBits = bitboard[idx];
-        int lastAmount = 0;
-        for (size_t len = 1; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++len) {
-            const int amount = std::popcount(xBits);
-
-            if (len >= 2) {
-                const int delta = lastAmount - amount;
-                if (whiteToMove_)
-                    alignmentCountWhite_[len] += delta;
-                else
-                    alignmentCountBlack_[len] += delta;
-            }
-
-            lastAmount = amount;
-            xBits &= xBits >> 1;
+            c1 = c2;
+            c2 = c3;
         }
     };
 
@@ -227,9 +235,9 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     auto& bitboardY = whiteToMove_ ? whiteBitboardY_ : blackBitboardY_;
     auto& bitboardDiag = whiteToMove_ ? whiteBitboardDiag_ : blackBitboardDiag_;
 
-    clearAlignments(bitboardX, idxY);
-    clearAlignments(bitboardY, idxX);
-    clearAlignments(bitboardDiag, idxX + idxY);
+    updateAlignments(bitboardX, idxY, true);
+    updateAlignments(bitboardY, idxX, true);
+    updateAlignments(bitboardDiag, idxX + idxY, true);
 
     const uint64_t maskX = 1ull << idxX;
     const uint64_t maskY = 1ull << idxY;
