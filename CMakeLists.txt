@@ -13,7 +13,7 @@ target_compile_options(hexodus PRIVATE
 
         # Optimization level
         $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:
-        -O3
+        -O3 -march=native
         >
         $<$<CONFIG:Debug>:
         -O0
