@@ -27,6 +27,7 @@ class Engine {
     uint32_t alphaBetaCutoffs_ = 0;
     uint32_t possibleMovesCounter_ = 0;
     uint32_t generatedMovesCounter_ = 0;
+    uint32_t madeMovesCounter_ = 0;
     uint32_t ttHitCounter_ = 0;
     uint32_t ttCollisionCounter_ = 0;
 

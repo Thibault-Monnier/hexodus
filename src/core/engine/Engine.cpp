@@ -8,13 +8,12 @@
 Move Engine::findBestMove(const uint16_t depth) {
     resetCounters();
 
-    initialDepth_ = depth;
-
     const auto startTime = std::chrono::high_resolution_clock::now();
 
     Move bestMove;
     Score eval = 0;
     for (uint16_t d = 1; d <= depth; ++d) {
+        initialDepth_ = d;
         eval = minimax(d, std::numeric_limits<Score>::min(), std::numeric_limits<Score>::max(),
                        &bestMove);
         std::cout << "Depth: " << d << ", Evaluation: " << eval << "\n";
@@ -31,6 +30,7 @@ Move Engine::findBestMove(const uint16_t depth) {
     std::cout << "Alpha-beta cutoffs: " << alphaBetaCutoffs_ << "\n";
     std::cout << "Generated moves: " << generatedMovesCounter_ << "\n";
     std::cout << "Possible moves calls: " << possibleMovesCounter_ << "\n";
+    std::cout << "Made moves: " << madeMovesCounter_ << "\n";
     std::cout << "Transposition table hits: " << ttHitCounter_ << "\n";
     std::cout << "Transposition table collisions: " << ttCollisionCounter_ << "\n";
     std::cout << "Time taken: " << duration << " ms\n";
@@ -65,7 +65,10 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
             else if (entry.flag == TTFlag::UpperBound)
                 beta = std::min(beta, evaluation);
 
-            if (entry.flag == TTFlag::Exact || alpha >= beta) return evaluation;
+            if (entry.flag == TTFlag::Exact || alpha >= beta) {
+                if (bestMoveOut) *bestMoveOut = entry.bestMove;
+                return evaluation;
+            }
         }
     } else if (entry.hash != 0) {
         ttCollisionCounter_++;
@@ -101,6 +104,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     // Iterate over the sorted moves
     for (const std::vector<Move>& bucket : std::ranges::reverse_view(buckets)) {
         for (const Move move : bucket) {
+            madeMovesCounter_++;
             board_.makeMove(move, false);
             const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
             board_.undoMove();
@@ -118,10 +122,12 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
 
             if (alpha >= beta) {
                 alphaBetaCutoffs_++;
-                break;
+                goto endLoop;
             }
         }
     }
+
+endLoop:
 
     const TTFlag flag = (bestEvaluation <= originalAlpha)  ? TTFlag::UpperBound
                         : (bestEvaluation >= originalBeta) ? TTFlag::LowerBound
