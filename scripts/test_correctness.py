@@ -43,20 +43,22 @@ def count_pieces(output: str) -> tuple[int, int]:
     Returns (white_count, black_count).
     """
     # Only count inside the board section (after "Current game state:")
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     in_board = False
     white, black = 0, 0
     for line in output.splitlines():
         if "Current game state:" in line:
             in_board = True
             continue
+        if "Quitting" in line or "Best move:" in line or "Undoing" in line or "Resetting" in line:
+            in_board = False
+            continue
         if in_board:
-            # Board lines contain only '.', 'X', 'O' and spaces
-            cells = line.split()
-            if not cells or not all(c in (".", "X", "O") for c in cells):
-                in_board = False
-                continue
-            white += cells.count("X")
-            black += cells.count("O")
+            clean_line = ansi_escape.sub('', line)
+            clean_line.split()
+            # If the line contains axis numbers, ignore them and count X, O
+            white += clean_line.count("X")
+            black += clean_line.count("O")
     return white, black
 
 
@@ -185,6 +187,26 @@ def test_two_moves_then_undo_twice():
     check("only white remains", w == 1 and b == 0, f"w={w}, b={b}")
 
 
+def test_win_in_one():
+    """Checks whether the bot sees a win in 1 move when 4 pieces are aligned."""
+    print("\n[test_win_in_one]")
+    # Initial: White at (0,0)
+    # Black: 0 1, 0 2
+    # White: 1 0, 2 0 -> White has (0,0), (1,0), (2,0)
+    # Black: 0 3, 0 4
+    # White: 3 0, 0 -1 -> White has (0,0), (1,0), (2,0), (3,0) on X-axis, plus (0,-1)
+    # Black: 0 5, 0 6
+    stdout, _ = run_session(["move 0 1 0 2", "move 1 0 2 0", "move 0 3 0 4", "move 3 0 0 -1", "analyse", "quit"])
+    try:
+        move = parse_best_move(stdout)
+
+        valid_winning_pairs = [{(0, 5), (0, 6)}, {(0, 6), (0, 5)}]
+
+        check("bot picks a winning move", set(move) in valid_winning_pairs, f"move={move}")
+    except AssertionError as e:
+        check("bot parses best move successfully", False, f"error parsing: {e}")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -207,6 +229,7 @@ if __name__ == "__main__":
     test_multiple_moves_no_crash()
     test_undo_after_moverequest()
     test_two_moves_then_undo_twice()
+    test_win_in_one()
 
     print(f"\n{'=' * 50}")
     print(f"Results: {passed} passed, {failed} failed, {passed + failed} total")
