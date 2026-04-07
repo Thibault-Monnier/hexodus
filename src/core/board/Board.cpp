@@ -141,7 +141,7 @@ void Board::print() const {
     for (int16_t y = maxY; y >= minY; --y) {
         std::cout << COLOR_AXIS << std::setw(3) << std::right  << y  << RESET << ' ';
 
-        for (int16_t i = 0; i < y - minY; ++i) std::cout << "  ";
+        for (int16_t i = 0; i < y - minY; ++i) std::cout << " ";
 
         for (int16_t x = minX; x <= maxX; ++x) {
             const TileKind kind = get(x, y);
