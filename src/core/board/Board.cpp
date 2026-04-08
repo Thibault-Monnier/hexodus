@@ -198,7 +198,7 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     board_[idxX][idxY] = kind;
 
     auto updateAlignments = [this](const auto& bitboard, const size_t idx,
-                                   const bool clearing = false) {
+                                   const bool clearing = false) __attribute__((always_inline)) {
         uint64_t xBits = bitboard[idx];
 
         int c1 = std::popcount(xBits);

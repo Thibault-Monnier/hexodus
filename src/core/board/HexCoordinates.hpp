@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cmath>
 #include <cstdint>
+
+#include "Coordinate.hpp"
 
 namespace HexCoordinates {
 
@@ -19,6 +20,15 @@ namespace HexCoordinates {
 [[nodiscard]] constexpr int16_t hexDistance(const Coordinate coord1, const Coordinate coord2) {
     return hexDistance(static_cast<int16_t>(coord1.x - coord2.x),
                        static_cast<int16_t>(coord1.y - coord2.y));
+}
+
+/// High-performance check whether two coordinates are adjacent on a hexagonal grid.
+[[nodiscard]] constexpr bool areAdjacent(const Coordinate coord1, const Coordinate coord2) {
+    const Coordinate d = coord1 - coord2;
+    const int16_t dx = d.x;
+    const int16_t dy = d.y;
+    // Per-axis check, all summed
+    return (dx * dx + dy * dy + dx * dy) == 1;
 }
 
 }  // namespace HexCoordinates

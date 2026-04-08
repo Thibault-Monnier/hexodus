@@ -103,8 +103,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
         if (hasTtMove && move == ttMove)
             score = 4;
         else {
-            const int16_t dist = HexCoordinates::hexDistance(move.coord1, move.coord2);
-            if (dist == 1) score = 3;
+            if (HexCoordinates::areAdjacent(move.coord1, move.coord2)) score = 3;
         }
 
         buckets[score].push_back(move);
