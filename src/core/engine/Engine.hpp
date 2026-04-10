@@ -49,11 +49,18 @@ class Engine {
         alphaBetaCutoffs_ = 0;
         possibleMovesCounter_ = 0;
         generatedMovesCounter_ = 0;
+        madeMovesCounter_ = 0;
         ttHitCounter_ = 0;
         ttCollisionCounter_ = 0;
     }
 
     Score minimax(uint16_t remainingDepth, Score alpha, Score beta, Move* bestMoveOut);
+
+    bool searchMoves(const std::vector<Move>& moves, uint16_t remainingDepth, Score& alpha,
+                     Score& beta, Score& bestEvaluation, Move& bestMoveInThisNode,
+                     Move* bestMoveOut);
+    bool searchMove(Move move, uint16_t remainingDepth, Score& alpha, Score& beta,
+                    Score& bestEvaluation, Move& bestMoveInThisNode, Move* bestMoveOut);
 
     /// Evaluates the current board state and returns an evaluation score. Positive scores indicate
     /// an advantage for the current player, while negative scores indicate a disadvantage.

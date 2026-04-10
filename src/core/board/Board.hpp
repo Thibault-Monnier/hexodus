@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "Coordinate.hpp"
-#include "HexCoordinates.hpp"
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
 
@@ -72,8 +71,8 @@ class Board {
     /// Reverts the board state to before the last move was made.
     void undoMove();
 
-    /// Generates all possible moves for the current board state and stores them in outMoves.
-    void generatePossibleMoves(std::vector<Move>& outMoves) const;
+    /// Generates a list of candidate coordinates for the engine to consider when generating moves.
+    void generateCandidates(std::vector<Coordinate>& outCandidates) const;
 
     /// Prints a representation of the board to the console.
     void print() const;

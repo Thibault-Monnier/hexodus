@@ -5,6 +5,8 @@
 #include <iostream>
 #include <ranges>
 
+#include "core/board/HexCoordinates.hpp"
+
 Move Engine::findBestMove(const uint16_t depth) {
     resetCounters();
 
@@ -54,29 +56,24 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
         return evaluate(remainingDepth);
     }
 
-    Move ttMove;
-    bool hasTtMove = false;
-
+    std::optional<Move> ttMove;
     bool ttCollision = false;
 
     const TTEntry& entry = transpositionTable_[board_.hash() % transpositionTable_.size()];
     if (entry.hash == board_.hash()) {
         ttHitCounter_++;
-
         ttMove = entry.bestMove;
-        hasTtMove = true;
 
         if (entry.remainingDepth >= remainingDepth) {
-            const Score evaluation = entry.score;
+            const auto [flag, eval] = std::make_pair(entry.flag, entry.score);
+            if (flag == TTFlag::LowerBound)
+                alpha = std::max(alpha, eval);
+            else if (flag == TTFlag::UpperBound)
+                beta = std::min(beta, eval);
 
-            if (entry.flag == TTFlag::LowerBound)
-                alpha = std::max(alpha, evaluation);
-            else if (entry.flag == TTFlag::UpperBound)
-                beta = std::min(beta, evaluation);
-
-            if (entry.flag == TTFlag::Exact || alpha >= beta) {
+            if (flag == TTFlag::Exact || alpha >= beta) {
                 if (bestMoveOut) *bestMoveOut = entry.bestMove;
-                return evaluation;
+                return eval;
             }
         }
     } else if (entry.hash != 0) {
@@ -85,54 +82,52 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     }
 
     const Score originalAlpha = alpha, originalBeta = beta;
-
     const bool white = board_.isWhiteToMove();
     Score bestEvaluation =
         white ? std::numeric_limits<Score>::min() : std::numeric_limits<Score>::max();
     Move bestMoveInThisNode;
 
-    std::vector<Move> moves;
-    board_.generatePossibleMoves(moves);
-    possibleMovesCounter_++;
-    generatedMovesCounter_ += moves.size();
-
-    std::array<std::vector<Move>, 5> buckets;
-    for (const Move move : moves) {
-        Score score = 0;
-
-        if (hasTtMove && move == ttMove)
-            score = 4;
-        else {
-            if (HexCoordinates::areAdjacent(move.coord1, move.coord2)) score = 3;
+    if (ttMove) {
+        if (searchMove(ttMove.value(), remainingDepth, alpha, beta, bestEvaluation,
+                       bestMoveInThisNode, bestMoveOut)) {
+            goto endLoop;
         }
-
-        buckets[score].push_back(move);
     }
 
-    // Iterate over the sorted moves
-    for (const std::vector<Move>& bucket : std::ranges::reverse_view(buckets)) {
-        for (const Move move : bucket) {
-            madeMovesCounter_++;
-            board_.makeMove(move, false);
-            const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
-            board_.undoMove();
+    {
+        std::vector<Coordinate> candidates;
+        board_.generateCandidates(candidates);
+        possibleMovesCounter_++;
 
-            if (white)
-                alpha = std::max(alpha, evaluation);
-            else
-                beta = std::min(beta, evaluation);
+        const auto getMoves = [&](const auto& predicate) {
+            std::vector<Move> moves;
+            for (size_t i = 0; i < candidates.size(); ++i) {
+                const Coordinate tile1 = candidates[i];
+                for (size_t j = i + 1; j < candidates.size(); ++j) {
+                    const Coordinate tile2 = candidates[j];
+                    assert(tile1 != tile2);
 
-            if (white ? evaluation > bestEvaluation : evaluation < bestEvaluation) {
-                bestEvaluation = evaluation;
-                bestMoveInThisNode = move;
-                if (bestMoveOut) *bestMoveOut = move;
+                    if (predicate(tile1, tile2)) {
+                        moves.emplace_back(tile1, tile2);
+                    }
+                }
             }
+            return moves;
+        };
 
-            if (alpha >= beta) {
-                alphaBetaCutoffs_++;
-                goto endLoop;
-            }
-        }
+        const auto searchStage = [&](const auto& predicate) {
+            const std::vector<Move> moves = getMoves(predicate);
+            generatedMovesCounter_ += moves.size();
+            return searchMoves(moves, remainingDepth, alpha, beta, bestEvaluation,
+                               bestMoveInThisNode, bestMoveOut);
+        };
+
+        searchStage([](const Coordinate& a, const Coordinate& b) {
+            return HexCoordinates::areAdjacent(a, b);
+        }) ||
+            searchStage([](const Coordinate& a, const Coordinate& b) {
+                return !HexCoordinates::areAdjacent(a, b);
+            });
     }
 
 endLoop:
@@ -152,6 +147,46 @@ endLoop:
     }
 
     return bestEvaluation;
+}
+
+bool Engine::searchMoves(const std::vector<Move>& moves, const uint16_t remainingDepth,
+                         Score& alpha, Score& beta, Score& bestEvaluation, Move& bestMoveInThisNode,
+                         Move* bestMoveOut) {
+    for (const Move move : moves) {
+        if (searchMove(move, remainingDepth, alpha, beta, bestEvaluation, bestMoveInThisNode,
+                       bestMoveOut)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Engine::searchMove(const Move move, const uint16_t remainingDepth, Score& alpha, Score& beta,
+                        Score& bestEvaluation, Move& bestMoveInThisNode, Move* bestMoveOut) {
+    const bool white = board_.isWhiteToMove();
+
+    madeMovesCounter_++;
+    board_.makeMove(move, false);
+    const Score evaluation = minimax(remainingDepth - 1, alpha, beta, nullptr);
+    board_.undoMove();
+
+    if (white)
+        alpha = std::max(alpha, evaluation);
+    else
+        beta = std::min(beta, evaluation);
+
+    if (white ? evaluation > bestEvaluation : evaluation < bestEvaluation) {
+        bestEvaluation = evaluation;
+        bestMoveInThisNode = move;
+        if (bestMoveOut) *bestMoveOut = move;
+    }
+
+    if (alpha >= beta) {
+        alphaBetaCutoffs_++;
+        return true;
+    }
+
+    return false;
 }
 
 Score Engine::evaluate(const uint16_t remainingDepth) const {

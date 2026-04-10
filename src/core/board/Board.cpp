@@ -74,14 +74,14 @@ consteval auto Board::generateOffsets() {
     return offsets;
 }
 
-void Board::generatePossibleMoves(std::vector<Move>& outMoves) const {
+void Board::generateCandidates(std::vector<Coordinate>& outCandidates) const {
     constexpr auto OFFSETS = generateOffsets();
 
     const auto [coord1, coord2] = lastMove();
     const auto [coord3, coord4] = moveHistory_.size() >= 2 ? beforeLastMove() : lastMove();
 
-    std::vector<Coordinate> tiles;
-    tiles.reserve(OFFSETS.size() * 4);
+    assert(outCandidates.empty());
+    outCandidates.reserve(OFFSETS.size() * 4);
 
     std::bitset<static_cast<size_t>(SIZE * SIZE)> seen;
 
@@ -95,20 +95,8 @@ void Board::generatePossibleMoves(std::vector<Move>& outMoves) const {
             const size_t index = asIndex(coord.x) * SIZE + asIndex(coord.y);
             if (!seen.test(index)) {
                 seen.set(index);
-                tiles.push_back(coord);
+                outCandidates.push_back(coord);
             }
-        }
-    }
-
-    assert(outMoves.empty());
-    outMoves.reserve(tiles.size() * (tiles.size() - 1));
-    for (size_t i = 0; i < tiles.size(); ++i) {
-        const Coordinate tile1 = tiles[i];
-        for (size_t j = i + 1; j < tiles.size(); ++j) {
-            const Coordinate tile2 = tiles[j];
-            if (tile1 == tile2) continue;
-
-            outMoves.emplace_back(tile1, tile2);
         }
     }
 }

@@ -24,9 +24,7 @@ namespace HexCoordinates {
 
 /// High-performance check whether two coordinates are adjacent on a hexagonal grid.
 [[nodiscard]] constexpr bool areAdjacent(const Coordinate coord1, const Coordinate coord2) {
-    const Coordinate d = coord1 - coord2;
-    const int16_t dx = d.x;
-    const int16_t dy = d.y;
+    const auto [dx, dy] = coord1 - coord2;
     // Per-axis check, all summed
     return (dx * dx + dy * dy + dx * dy) == 1;
 }
