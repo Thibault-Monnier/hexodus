@@ -62,11 +62,24 @@ class Engine {
     bool searchMove(Move move, uint16_t remainingDepth, Score& alpha, Score& beta,
                     Score& bestEvaluation, Move& bestMoveInThisNode, Move* bestMoveOut);
 
+    /// Probes the transposition table for the current board state. Returns a Score if a valid entry
+    /// is found, std::nullopt otherwise.
+    std::optional<Score> probeTT(uint16_t remainingDepth, Score& alpha, Score& beta,
+                                 std::optional<Move>& ttMove, bool& ttCollision);
+
+    /// Stores an entry in the transposition table for the current board state.
+    void storeTT(uint16_t remainingDepth, Score originalAlpha, Score originalBeta,
+                 Score bestEvaluation, Move bestMove, bool ttCollision);
+
     /// Evaluates the current board state and returns an evaluation score. Positive scores indicate
     /// an advantage for the current player, while negative scores indicate a disadvantage.
     [[nodiscard]] Score evaluate(uint16_t remainingDepth) const;
 
     [[nodiscard]] bool isWinScore(const Score score) const {
         return std::abs(score) >= WIN_SCORE - initialDepth_;
+    }
+
+    [[nodiscard]] TTEntry& getTTEntry() {
+        return transpositionTable_[board_.hash() % transpositionTable_.size()];
     }
 };

@@ -62,12 +62,13 @@ class Board {
         return EndOfGameType::None;
     }
 
-    [[nodiscard]] uint32_t countAlignments(const uint32_t length, const bool white) const {
+    [[nodiscard]] uint32_t countAlignmentsWhite(const uint32_t length) const {
         assert(length <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH);
-        if (white)
-            return alignmentCountWhite_[length];
-        else
-            return alignmentCountBlack_[length];
+        return alignmentCountWhite_[length];
+    }
+    [[nodiscard]] uint32_t countAlignmentsBlack(const uint32_t length) const {
+        assert(length <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH);
+        return alignmentCountBlack_[length];
     }
 
     /// Updates the board state by placing pieces according to the move. If the move is invalid,
