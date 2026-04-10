@@ -16,7 +16,7 @@ struct TTEntry {
 
 class Engine {
     static constexpr Score WIN_SCORE = 10'000;
-    static constexpr uint64_t TT_SIZE = 1'000'000;
+    static constexpr uint64_t TT_SIZE = 5'000'000;
 
     Board& board_;
 
