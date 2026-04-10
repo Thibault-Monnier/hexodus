@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <algorithm>
 #include <stdexcept>
 
 /// Imitates a std::vector without memory allocation, by using a fixed-size capacity.
@@ -10,6 +10,8 @@ class SizedArray {
     size_t size_ = 0;
 
    public:
+    SizedArray() = default;
+
     [[nodiscard]] size_t size() const { return size_; }
     [[nodiscard]] static size_t capacity() { return Capacity; }
     [[nodiscard]] bool empty() const { return size_ == 0; }
