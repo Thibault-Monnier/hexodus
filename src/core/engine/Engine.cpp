@@ -95,8 +95,7 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
     }
 
     {
-        std::vector<Coordinate> candidates;
-        board_.generateCandidates(candidates);
+        const std::vector<Coordinate>& candidates = board_.getCandidates();
         possibleMovesCounter_++;
 
         const auto getMoves = [&](const auto& predicate) {

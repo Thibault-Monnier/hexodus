@@ -31,10 +31,15 @@ class Board {
     std::array<uint64_t, SIZE> blackBitboardX_{}, blackBitboardY_{};
     std::array<uint64_t, 2 * SIZE - 1> whiteBitboardDiag_{}, blackBitboardDiag_{};
 
-    /// Stores the number of alignments of each length for white
+    /// Stores the number of alignments of each length for white.
     std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCountWhite_ = {};
-    /// Stores the number of alignments of each length for black
+    /// Stores the number of alignments of each length for black.
     std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCountBlack_ = {};
+
+    /// Stores the number of pieces in the neighborhood of each coordinate.
+    std::array<uint32_t, static_cast<size_t>(SIZE* SIZE)> candidateCount_{};
+    /// Stores the set of candidate coordinates for move generation.
+    ankerl::unordered_dense::set<Coordinate> candidateSet_;
 
     /// Stores the history of moves made, used for undoing moves and possible moves generation.
     std::vector<Move> moveHistory_;
@@ -71,8 +76,10 @@ class Board {
     /// Reverts the board state to before the last move was made.
     void undoMove();
 
-    /// Generates a list of candidate coordinates for the engine to consider when generating moves.
-    void generateCandidates(std::vector<Coordinate>& outCandidates) const;
+    /// Returns the list of candidate coordinates for the engine to consider when generating moves.
+    [[nodiscard]] const std::vector<Coordinate>& getCandidates() const {
+        return candidateSet_.values();
+    }
 
     /// Prints a representation of the board to the console.
     void print() const;
@@ -93,10 +100,14 @@ class Board {
         return get(x, y) != TileKind::Empty;
     }
 
+    [[nodiscard]] bool isOccupied(const Coordinate coord) const {
+        return isOccupied(coord.x, coord.y);
+    }
+
     void set(TileKind kind, int16_t x, int16_t y);
 
-    [[nodiscard]] Coordinate findAlignmentEnd(Coordinate origin, int16_t dx, int16_t dy,
-                                              TileKind kind) const;
+    /// Updates the list of candidate coordinates based on the last move made.
+    void updateCandidates(Coordinate coord, bool set);
 
     /// Checks if the move is valid. If not, prints an error message.
     [[nodiscard]] bool validateMove(const Move& move) const;

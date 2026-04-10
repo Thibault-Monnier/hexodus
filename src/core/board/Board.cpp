@@ -74,33 +74,6 @@ consteval auto Board::generateOffsets() {
     return offsets;
 }
 
-void Board::generateCandidates(std::vector<Coordinate>& outCandidates) const {
-    constexpr auto OFFSETS = generateOffsets();
-
-    const auto [coord1, coord2] = lastMove();
-    const auto [coord3, coord4] = moveHistory_.size() >= 2 ? beforeLastMove() : lastMove();
-
-    assert(outCandidates.empty());
-    outCandidates.reserve(OFFSETS.size() * 4);
-
-    std::bitset<static_cast<size_t>(SIZE * SIZE)> seen;
-
-    // Push each offset around the 4 coords
-    for (const Coordinate base : {coord1, coord2, coord3, coord4}) {
-        for (const Coordinate offset : OFFSETS) {
-            const Coordinate coord = base + offset;
-
-            if (isOccupied(coord.x, coord.y)) continue;
-
-            const size_t index = asIndex(coord.x) * SIZE + asIndex(coord.y);
-            if (!seen.test(index)) {
-                seen.set(index);
-                outCandidates.push_back(coord);
-            }
-        }
-    }
-}
-
 void Board::print() const {
     int16_t maxX = std::numeric_limits<int16_t>::min(), maxY = maxX;
     int16_t minX = std::numeric_limits<int16_t>::max(), minY = minX;
@@ -185,6 +158,8 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
 
     board_[idxX][idxY] = kind;
 
+    updateCandidates(coords, kind != TileKind::Empty);
+
     auto updateAlignments = [this](const auto& bitboard, const size_t idx,
                                    const bool clearing = false) __attribute__((always_inline)) {
         uint64_t xBits = bitboard[idx];
@@ -246,22 +221,30 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
     updateAlignments(bitboardDiag, idxX + idxY);
 }
 
-__attribute__((always_inline)) Coordinate Board::findAlignmentEnd(const Coordinate origin,
-                                                                  const int16_t dx,
-                                                                  const int16_t dy,
-                                                                  const TileKind kind) const {
-    Coordinate last = origin;
+void Board::updateCandidates(const Coordinate coord, const bool set) {
+    constexpr auto OFFSETS = generateOffsets();
 
-    for (uint32_t i = 1; i < GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++i) {
-        const auto x = static_cast<int16_t>(origin.x + i * dx);
-        const auto y = static_cast<int16_t>(origin.y + i * dy);
-        if (get(x, y) != kind) break;
-
-        last.x = x;
-        last.y = y;
+    if (set) {
+        candidateSet_.erase(coord);
+    } else {
+        const size_t index = asIndex(coord.x) * SIZE + asIndex(coord.y);
+        if (candidateCount_[index] > 0) {
+            candidateSet_.insert(coord);
+        }
     }
 
-    return last;
+    for (const Coordinate offset : OFFSETS) {
+        const Coordinate newCoord = coord + offset;
+
+        const size_t index = asIndex(newCoord.x) * SIZE + asIndex(newCoord.y);
+        candidateCount_[index] += set ? 1 : -1;
+        if (set && candidateCount_[index] == 1 && !isOccupied(newCoord)) {
+            candidateSet_.insert(newCoord);
+        }
+        if (candidateCount_[index] == 0) {
+            candidateSet_.erase(newCoord);
+        }
+    }
 }
 
 bool Board::validateMove(const Move& move) const {
