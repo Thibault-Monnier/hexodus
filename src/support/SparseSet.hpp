@@ -24,17 +24,23 @@ class SparseSet {
     [[nodiscard]] size_t size() const { return elements_.size(); }
     [[nodiscard]] bool empty() const { return elements_.empty(); }
 
-    [[nodiscard]] bool contains(IdType id) {
+    [[nodiscard]] bool contains(IdType id) const {
         assert(id < Capacity);
         return idToIndexTable_[id] != NULL_INDEX;
     }
 
-    [[nodiscard]] T& get(IdType id) const {
+    [[nodiscard]] const T& get(IdType id) const {
+        assert(contains(id));
+        return elements_[idToIndexTable_[id]].value;
+    }
+    [[nodiscard]] T& get(IdType id) {
         assert(contains(id));
         return elements_[idToIndexTable_[id]].value;
     }
 
     void insert(T value, IdType id) {
+        if (contains(id)) return;
+
         assert(id < Capacity);
         idToIndexTable_[id] = size();
         elements_.emplace_back(value, id);
@@ -46,11 +52,13 @@ class SparseSet {
         const uint32_t idx = idToIndexTable_[id];
 
         Element& lastElem = elements_.back();
-        elements_.pop_back();
         elements_[idx] = std::move(lastElem);
 
-        idToIndexTable_[id] = NULL_INDEX;
         idToIndexTable_[lastElem.id] = idx;
+        // MUST be done after, in case we are erasing the last element
+        idToIndexTable_[id] = NULL_INDEX;
+
+        elements_.pop_back();
     }
 
     [[nodiscard]] const T& operator[](size_t index) const { return elements_[index].value; }
