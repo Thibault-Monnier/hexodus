@@ -13,7 +13,7 @@ target_compile_options(hexodus PRIVATE
 
         # Optimization level
         $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:
-        -O3 -march=native
+        -O3 -march=native -flto
         >
         $<$<CONFIG:Debug>:
         -O0
@@ -32,6 +32,10 @@ target_compile_options(hexodus PRIVATE
 )
 
 target_link_options(hexodus PRIVATE
+        $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:
+        -flto
+        >
+
         $<$<CONFIG:Debug>:
         -fsanitize=address,undefined
         >
