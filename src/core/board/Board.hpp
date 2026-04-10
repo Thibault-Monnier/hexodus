@@ -8,6 +8,7 @@
 #include "Coordinate.hpp"
 #include "Move.hpp"
 #include "core/GameRuleConstants.hpp"
+#include "support/SparseSet.hpp"
 
 enum class TileKind : uint8_t { Empty, Black, White };
 
@@ -20,6 +21,8 @@ class Board {
     static constexpr int16_t SIZE = 64;
 
     static constexpr int16_t NEIGHBOURS_RADIUS = 2;
+
+    using CandidateSet = SparseSet<Coordinate, static_cast<size_t>(SIZE* SIZE), uint16_t>;
 
    private:
     bool whiteToMove_ = true;
@@ -39,7 +42,7 @@ class Board {
     /// Stores the number of pieces in the neighborhood of each coordinate.
     std::array<uint32_t, static_cast<size_t>(SIZE* SIZE)> candidateCount_{};
     /// Stores the set of candidate coordinates for move generation.
-    ankerl::unordered_dense::set<Coordinate> candidateSet_;
+    CandidateSet candidateSet_;
 
     /// Stores the history of moves made, used for undoing moves and possible moves generation.
     std::vector<Move> moveHistory_;
@@ -77,9 +80,7 @@ class Board {
     void undoMove();
 
     /// Returns the list of candidate coordinates for the engine to consider when generating moves.
-    [[nodiscard]] const std::vector<Coordinate>& getCandidates() const {
-        return candidateSet_.values();
-    }
+    [[nodiscard]] const CandidateSet& getCandidates() const { return candidateSet_; }
 
     /// Prints a representation of the board to the console.
     void print() const;

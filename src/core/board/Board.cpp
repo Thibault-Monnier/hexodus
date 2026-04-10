@@ -224,12 +224,14 @@ void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
 void Board::updateCandidates(const Coordinate coord, const bool set) {
     constexpr auto OFFSETS = generateOffsets();
 
-    if (set) {
-        candidateSet_.erase(coord);
-    } else {
+    {
         const size_t index = asIndex(coord.x) * SIZE + asIndex(coord.y);
-        if (candidateCount_[index] > 0) {
-            candidateSet_.insert(coord);
+        if (set) {
+            candidateSet_.erase(index);
+        } else {
+            if (candidateCount_[index] > 0) {
+                candidateSet_.insert(coord, index);
+            }
         }
     }
 
@@ -239,10 +241,10 @@ void Board::updateCandidates(const Coordinate coord, const bool set) {
         const size_t index = asIndex(newCoord.x) * SIZE + asIndex(newCoord.y);
         candidateCount_[index] += set ? 1 : -1;
         if (set && candidateCount_[index] == 1 && !isOccupied(newCoord)) {
-            candidateSet_.insert(newCoord);
+            candidateSet_.insert(newCoord, index);
         }
         if (candidateCount_[index] == 0) {
-            candidateSet_.erase(newCoord);
+            candidateSet_.erase(index);
         }
     }
 }
