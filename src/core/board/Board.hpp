@@ -91,6 +91,11 @@ class Board {
         return board_[asIndex(x)][asIndex(y)];
     }
 
+    /// Fast move validation without error messages, used for the engine's search.
+    [[nodiscard]] bool isValidMoveFast(const Move& move) const {
+        return !isOccupied(move.coord1) && !isOccupied(move.coord2);
+    }
+
    private:
     [[nodiscard]] static size_t asIndex(const int16_t a) {
         assert(isInBounds(a));

@@ -39,7 +39,6 @@ Move Engine::findBestMove(const uint16_t depth) {
               << bestMove.coord2.x << ", " << bestMove.coord2.y << ")\n";
     std::cout << "Nodes evaluated: " << nodesEvaluated_ << "\n";
     std::cout << "Alpha-beta cutoffs: " << alphaBetaCutoffs_ << "\n";
-    std::cout << "Generated moves: " << generatedMovesCounter_ << "\n";
     std::cout << "Possible moves calls: " << possibleMovesCounter_ << "\n";
     std::cout << "Made moves: " << madeMovesCounter_ << "\n";
     std::cout << "Transposition table hits: " << ttHitCounter_ << "\n";
@@ -96,6 +95,18 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
 
     bool cutoff = (ttMove && searchMove(ttMove.value(), remainingDepth, alpha, beta, bestEvaluation,
                                         bestMoveInThisNode, bestMoveOut));
+    if (!cutoff) {
+        // Killer moves
+        for (const Move& killerMove : killerMoves_[initialDepth_ - remainingDepth]) {
+            if (killerMove == Move{}) continue;
+            if (!board_.isValidMoveFast(killerMove)) continue;
+            if (searchMove(killerMove, remainingDepth, alpha, beta, bestEvaluation,
+                           bestMoveInThisNode, bestMoveOut)) {
+                cutoff = true;
+                break;
+            }
+        }
+    }
     if (!cutoff) cutoff = searchStage(HexCoordinates::areAdjacent);
     if (!cutoff) cutoff = searchStage(std::not_fn(HexCoordinates::areAdjacent));
 
@@ -103,18 +114,6 @@ Score Engine::minimax(const uint16_t remainingDepth, Score alpha, Score beta, Mo
             ttCollision);
 
     return bestEvaluation;
-}
-
-bool Engine::searchMoves(const std::vector<Move>& moves, const uint16_t remainingDepth,
-                         Score& alpha, Score& beta, Score& bestEvaluation, Move& bestMoveInThisNode,
-                         Move* bestMoveOut) {
-    for (const Move move : moves) {
-        if (searchMove(move, remainingDepth, alpha, beta, bestEvaluation, bestMoveInThisNode,
-                       bestMoveOut)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool Engine::searchMove(const Move move, const uint16_t remainingDepth, Score& alpha, Score& beta,
@@ -138,6 +137,11 @@ bool Engine::searchMove(const Move move, const uint16_t remainingDepth, Score& a
     }
 
     if (alpha >= beta) {
+        const uint16_t depth = initialDepth_ - remainingDepth;
+        for (size_t i = killerMoves_[depth].size() - 1; i > 0; --i)
+            killerMoves_[depth][i] = killerMoves_[depth][i - 1];
+        killerMoves_[depth][0] = move;
+
         alphaBetaCutoffs_++;
         return true;
     }

@@ -21,12 +21,14 @@ class Engine {
     Board& board_;
 
     std::vector<TTEntry> transpositionTable_ = std::vector(TT_SIZE, TTEntry{});
+
+    std::array<std::array<Move, 5>, 20> killerMoves_{};
+
     uint16_t initialDepth_ = 0;
 
     uint32_t nodesEvaluated_ = 0;
     uint32_t alphaBetaCutoffs_ = 0;
     uint32_t possibleMovesCounter_ = 0;
-    uint32_t generatedMovesCounter_ = 0;
     uint32_t madeMovesCounter_ = 0;
     uint32_t ttHitCounter_ = 0;
     uint32_t ttCollisionCounter_ = 0;
@@ -48,7 +50,6 @@ class Engine {
         nodesEvaluated_ = 0;
         alphaBetaCutoffs_ = 0;
         possibleMovesCounter_ = 0;
-        generatedMovesCounter_ = 0;
         madeMovesCounter_ = 0;
         ttHitCounter_ = 0;
         ttCollisionCounter_ = 0;
@@ -56,9 +57,6 @@ class Engine {
 
     Score minimax(uint16_t remainingDepth, Score alpha, Score beta, Move* bestMoveOut);
 
-    bool searchMoves(const std::vector<Move>& moves, uint16_t remainingDepth, Score& alpha,
-                     Score& beta, Score& bestEvaluation, Move& bestMoveInThisNode,
-                     Move* bestMoveOut);
     bool searchMove(Move move, uint16_t remainingDepth, Score& alpha, Score& beta,
                     Score& bestEvaluation, Move& bestMoveInThisNode, Move* bestMoveOut);
 
