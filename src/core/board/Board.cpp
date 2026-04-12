@@ -271,7 +271,9 @@ bool Board::validateMove(const Move& move) const {
     return true;
 }
 
-void Board::updateHash(const int16_t x, const int16_t y, TileKind kind) {
+__attribute__((no_sanitize("unsigned-integer-overflow"))) void Board::updateHash(const int16_t x,
+                                                                                 const int16_t y,
+                                                                                 TileKind kind) {
     uint64_t seed = static_cast<uint64_t>(static_cast<uint16_t>(x)) |
                     static_cast<uint64_t>(static_cast<uint16_t>(y)) << 16 |
                     static_cast<uint64_t>(static_cast<uint16_t>(kind)) << 32;

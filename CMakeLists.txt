@@ -27,7 +27,7 @@ target_compile_options(hexodus PRIVATE
 
         # Sanitizers
         $<$<CONFIG:Debug>:
-        -fsanitize=address,undefined
+        -fsanitize=address,undefined,integer
         >
 )
 
@@ -37,7 +37,7 @@ target_link_options(hexodus PRIVATE
         >
 
         $<$<CONFIG:Debug>:
-        -fsanitize=address,undefined
+        -fsanitize=address,undefined,integer
         >
 )
 
