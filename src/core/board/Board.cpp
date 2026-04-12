@@ -151,74 +151,49 @@ void Board::print() const {
 }
 
 void Board::set(const TileKind kind, const int16_t x, const int16_t y) {
-    const Coordinate coords{x, y};
+    const Coordinate coord{x, y};
 
-    const size_t idxX = asIndex(coords.x);
-    const size_t idxY = asIndex(coords.y);
+    const TileKind prevKind = get(coord);
 
-    board_[idxX][idxY] = kind;
+    board_[asIndex(coord.x)][asIndex(coord.y)] = kind;
 
-    updateCandidates(coords, kind != TileKind::Empty);
+    const bool set = kind != TileKind::Empty;
+    updateCandidates(coord, set);
+    updateAlignments(coord, set ? kind : prevKind, set);
+}
 
-    auto updateAlignments = [this](const auto& bitboard, const size_t idx,
-                                   const bool clearing = false) __attribute__((always_inline)) {
-        uint64_t xBits = bitboard[idx];
+void Board::updateAlignments(const Coordinate coord, const TileKind kind, const bool set) {
+    constexpr std::array<Coordinate, 3> DIRECTIONS = {Coordinate{1, 0}, Coordinate{0, 1},
+                                                      Coordinate{-1, 1}};
+    auto& alignmentCount = whiteToMove_ ? alignmentCountWhite_ : alignmentCountBlack_;
 
-        int c1 = std::popcount(xBits);
-        xBits &= xBits >> 1;
-        int c2 = std::popcount(xBits);
+    const int sign = set ? 1 : -1;
+    for (const Coordinate dir : DIRECTIONS) {
+        const uint32_t count1 = findAlignmentLength(coord, dir, kind);
+        const uint32_t count2 = findAlignmentLength(coord, -dir, kind);
 
-        for (size_t len = 2; len <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1; ++len) {
-            xBits &= xBits >> 1;
+        const uint32_t totalCount =
+            std::min(count1 + count2 + 1,
+                     static_cast<uint32_t>(GameRuleConstants::WINNING_ALIGNMENT_LENGTH));
 
-            const int c3 = std::popcount(xBits);
+        if (totalCount >= 2) alignmentCount[totalCount] += sign;
 
-            if (len >= 2) {
-                // The amount of alignments of length = len
-                const int amount = c1 - 2 * c2 + c3;
-                if (clearing) {
-                    if (whiteToMove_)
-                        alignmentCountWhite_[len - 1] -= amount;
-                    else
-                        alignmentCountBlack_[len - 1] -= amount;
-                } else {
-                    if (whiteToMove_)
-                        alignmentCountWhite_[len - 1] += amount;
-                    else
-                        alignmentCountBlack_[len - 1] += amount;
-                }
-            }
+        if (count1 >= 2) alignmentCount[count1] -= sign;
+        if (count2 >= 2) alignmentCount[count2] -= sign;
+    }
+}
 
-            c1 = c2;
-            c2 = c3;
-        }
-    };
+uint32_t Board::findAlignmentLength(const Coordinate start, const Coordinate dir,
+                                    const TileKind kind) const {
+    Coordinate coord = start;
 
-    auto& bitboardX = whiteToMove_ ? whiteBitboardX_ : blackBitboardX_;
-    auto& bitboardY = whiteToMove_ ? whiteBitboardY_ : blackBitboardY_;
-    auto& bitboardDiag = whiteToMove_ ? whiteBitboardDiag_ : blackBitboardDiag_;
-
-    updateAlignments(bitboardX, idxY, true);
-    updateAlignments(bitboardY, idxX, true);
-    updateAlignments(bitboardDiag, idxX + idxY, true);
-
-    const uint64_t maskX = 1ull << idxX;
-    const uint64_t maskY = 1ull << idxY;
-    const uint64_t maskDiag = 1ull << idxY;
-
-    if (kind == TileKind::Empty) {
-        bitboardX[idxY] &= ~maskX;
-        bitboardY[idxX] &= ~maskY;
-        bitboardDiag[idxX + idxY] &= ~maskDiag;
-    } else {
-        bitboardX[idxY] |= maskX;
-        bitboardY[idxX] |= maskY;
-        bitboardDiag[idxX + idxY] |= maskDiag;
+    uint32_t count = 0;
+    for (; count <= GameRuleConstants::WINNING_ALIGNMENT_LENGTH; ++count) {
+        coord += dir;
+        if (get(coord) != kind) break;
     }
 
-    updateAlignments(bitboardX, idxY);
-    updateAlignments(bitboardY, idxX);
-    updateAlignments(bitboardDiag, idxX + idxY);
+    return count;
 }
 
 void Board::updateCandidates(const Coordinate coord, const bool set) {
@@ -250,19 +225,19 @@ void Board::updateCandidates(const Coordinate coord, const bool set) {
 }
 
 bool Board::validateMove(const Move& move) const {
-    if (!isInBounds(move.coord1.x, move.coord1.y)) {
+    if (!isInBounds(move.coord1)) {
         std::cerr << "Invalid move: coordinate (" << move.coord1.x << ", " << move.coord1.y
                   << ") is out of bounds.\n";
         return false;
     }
 
-    if (isOccupied(move.coord1.x, move.coord1.y)) {
+    if (isOccupied(move.coord1)) {
         std::cerr << "Invalid move: coordinate (" << move.coord1.x << ", " << move.coord1.y
                   << ") is already occupied.\n";
         return false;
     }
 
-    if (isOccupied(move.coord2.x, move.coord2.y)) {
+    if (isOccupied(move.coord2)) {
         std::cerr << "Invalid move: coordinate (" << move.coord2.x << ", " << move.coord2.y
                   << ") is already occupied.\n";
         return false;

@@ -29,11 +29,6 @@ class Board {
 
     std::array<std::array<TileKind, SIZE>, SIZE> board_ = {};
 
-    // Bitboards per axis for each player.
-    std::array<uint64_t, SIZE> whiteBitboardX_{}, whiteBitboardY_{};
-    std::array<uint64_t, SIZE> blackBitboardX_{}, blackBitboardY_{};
-    std::array<uint64_t, 2 * SIZE - 1> whiteBitboardDiag_{}, blackBitboardDiag_{};
-
     /// Stores the number of alignments of each length for white.
     std::array<uint32_t, GameRuleConstants::WINNING_ALIGNMENT_LENGTH + 1> alignmentCountWhite_ = {};
     /// Stores the number of alignments of each length for black.
@@ -86,11 +81,6 @@ class Board {
     /// Prints a representation of the board to the console.
     void print() const;
 
-    [[nodiscard]] TileKind get(const int16_t x, const int16_t y) const {
-        assert(isInBounds(x, y));
-        return board_[asIndex(x)][asIndex(y)];
-    }
-
     /// Fast move validation without error messages, used for the engine's search.
     [[nodiscard]] bool isValidMoveFast(const Move& move) const {
         return !isOccupied(move.coord1) && !isOccupied(move.coord2);
@@ -102,6 +92,13 @@ class Board {
         return a + SIZE / 2;
     }
 
+    [[nodiscard]] TileKind get(const int16_t x, const int16_t y) const {
+        assert(isInBounds(x, y));
+        return board_[asIndex(x)][asIndex(y)];
+    }
+
+    [[nodiscard]] TileKind get(const Coordinate coord) const { return get(coord.x, coord.y); }
+
     [[nodiscard]] bool isOccupied(const int16_t x, const int16_t y) const {
         assert(isInBounds(x, y));
         return get(x, y) != TileKind::Empty;
@@ -111,7 +108,20 @@ class Board {
         return isOccupied(coord.x, coord.y);
     }
 
+    [[nodiscard]] static bool isOppositeColor(const TileKind kind1, const TileKind kind2) {
+        return (kind1 == TileKind::White && kind2 == TileKind::Black) ||
+               (kind1 == TileKind::Black && kind2 == TileKind::White);
+    }
+
     void set(TileKind kind, int16_t x, int16_t y);
+
+    void updateAlignments(Coordinate coord, TileKind kind, bool set);
+
+    /// Returns a pair where the first element is the number of pieces of the same color in the
+    /// direction until the first tile of the opposite color. The second element is the distance to
+    /// that tile of the opposite color.
+    [[nodiscard]] uint32_t findAlignmentLength(Coordinate start, Coordinate dir,
+                                                                TileKind kind) const;
 
     /// Updates the list of candidate coordinates based on the last move made.
     void updateCandidates(Coordinate coord, bool set);
@@ -123,6 +133,10 @@ class Board {
 
     [[nodiscard]] static bool isInBounds(const int16_t x, const int16_t y) {
         return isInBounds(x) && isInBounds(y);
+    }
+
+    [[nodiscard]] static bool isInBounds(const Coordinate coord) {
+        return isInBounds(coord.x, coord.y);
     }
 
     [[nodiscard]] Move lastMove() const {
