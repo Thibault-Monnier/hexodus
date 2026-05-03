@@ -18,14 +18,14 @@ class HexGameUI:
         self.root = root
         self.root.title("Hexodus GUI")
         # Increase default window size
-        self.root.geometry("1024x768")
+        self.root.geometry("2000x1200")
 
         self.colors = {"Player 1 (White)": "#FFC107",
                        "Player 2 (Black)": "#0D6EFD"}  # More vibrant yellow/amber and vivid blue
         self.pieces = {}  # (q, r): color
-        self.hex_size = 25
-        self.offset_x = 512
-        self.offset_y = 384
+        self.hex_size = 50
+        self.offset_x = 1000
+        self.offset_y = 600
         self.current_turn_moves = []
         self.history = []  # list of (color, list_of_coords) to handle undo
         self.redo_stack = []  # allow redo
@@ -114,7 +114,7 @@ class HexGameUI:
         # Control panel styles
         ctrl_bg, fg_col, btn_bg, btn_fg = "#2E3440", "#D8DEE9", "#434C5E", "#ECEFF4"
 
-        control_frame = tk.Frame(self.root, width=320, bg=ctrl_bg, padx=20, pady=20)
+        control_frame = tk.Frame(self.root, width=600, bg=ctrl_bg, padx=20, pady=20)
         control_frame.pack(side=tk.RIGHT, fill=tk.Y)
         control_frame.pack_propagate(False)
 
@@ -125,33 +125,33 @@ class HexGameUI:
 
         # Make the status text dynamically fit nicely
         self.status_label = tk.Label(control_frame, textvariable=self.status_var, font=("Helvetica", 12), bg=ctrl_bg,
-                                     fg=fg_col, justify=tk.LEFT, anchor="w", wraplength=240)
-        self.status_label.pack(fill=tk.X, pady=5)
+                                     fg=fg_col, justify=tk.LEFT, anchor="w", wraplength=480)
+        self.status_label.pack(fill=tk.X, pady=10)
 
         tk.Label(control_frame, textvariable=self.eval_var, font=("Consolas", 14, "bold"), bg=ctrl_bg, fg="#A3BE8C",
                  justify=tk.LEFT, anchor="w").pack(fill=tk.X, pady=(0, 20))
 
         def make_btn(text, cmd, bg_col=btn_bg):
             btn = tk.Button(control_frame, text=text, command=cmd, bg=bg_col, fg=btn_fg, font=("Helvetica", 11), bd=0,
-                            relief="flat", activebackground="#4C566A", activeforeground="#FFFFFF", pady=8,
+                            relief="flat", activebackground="#4C566A", activeforeground="#FFFFFF", pady=12,
                             cursor="hand2")
-            btn.pack(fill=tk.X, pady=6)
+            btn.pack(fill=tk.X, pady=4)
             return btn
 
         def make_header(text):
             tk.Label(control_frame, text=text, font=("Helvetica", 10, "bold"), bg=ctrl_bg, fg="#4C566A",
-                     anchor="w").pack(fill=tk.X, pady=(15, 5))
+                     anchor="w").pack(fill=tk.X, pady=(10, 4))
 
         make_header("GAME")
 
         button_row = tk.Frame(control_frame, bg=ctrl_bg)
-        button_row.pack(fill=tk.X, pady=2)
+        button_row.pack(fill=tk.X, pady=6)
         tk.Button(button_row, text="Undo", command=self.on_undo, bg=btn_bg, fg=btn_fg, font=("Helvetica", 11), bd=0,
-                  relief="flat", activebackground="#4C566A", activeforeground="#FFFFFF", pady=8, cursor="hand2").pack(
-            side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+                  relief="flat", activebackground="#4C566A", activeforeground="#FFFFFF", pady=12, cursor="hand2").pack(
+            side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4))
         tk.Button(button_row, text="Redo", command=self.on_redo, bg=btn_bg, fg=btn_fg, font=("Helvetica", 11), bd=0,
-                  relief="flat", activebackground="#4C566A", activeforeground="#FFFFFF", pady=8, cursor="hand2").pack(
-            side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
+                  relief="flat", activebackground="#4C566A", activeforeground="#FFFFFF", pady=12, cursor="hand2").pack(
+            side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 0))
 
         make_btn("Reset Game", self.on_reset)
 
